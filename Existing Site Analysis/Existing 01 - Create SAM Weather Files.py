@@ -11,6 +11,18 @@ import nest_asyncio
 # Define the year for data processing
 year = 2022
 
+# === EDIT THIS TO POINT TO YOUR EXTERNAL DRIVE ===
+BASE_DIR = Path("/Volumes/Wickett SSD/Snow_Loss_Project")
+
+# INPUTS
+folder_path = BASE_DIR / f"NSRDB_parquet/{year}_NSRDB_parquet"  # Input Parquet directory
+nc_file_path = Path("Data/Snow Data") / f"4km_SWE_Depth_WY{year}_v01.nc"  # NetCDF stays local
+
+# OUTPUTS
+output_parquet_dir = BASE_DIR / f"NSRDB_parquet/{year}_NSRDB_parquet"  # Same as input
+output_csv_dir = BASE_DIR / f"SAM_Weather_Files/{year} Weather Files"
+output_csv_dir.mkdir(parents=True, exist_ok=True)
+
 
 # Function to save a DataFrame to a CSV file with metadata included
 async def save_to_csv_with_metadata_from_parquet(data_df, metadata_df, output_file_path):
@@ -96,7 +108,7 @@ async def process_file(file_path, nc_data, folder_path):
         raise ValueError("Could not extract lat and lon from file name.")
 
     # Check if the output Parquet file already exists
-    updated_parquet_file_path = f'/Users/shelbiedavis1/Multi-State Simulation/NSRDB_parquet/{year}_NSRDB_parquet/{lat}_{lon}_snow.parquet'
+    updated_parquet_file_path = output_parquet_dir / f"{lat}_{lon}_snow.parquet"
     if Path(updated_parquet_file_path).exists():
         print(f"Skipping file: {updated_parquet_file_path} already exists")
         return
@@ -128,7 +140,7 @@ async def process_file(file_path, nc_data, folder_path):
     metadata_file_path = folder_path / f"{lat}_{lon}_metadata.parquet"
     if metadata_file_path.exists():
         metadata_df = pd.read_parquet(metadata_file_path)
-        output_file_path = f'/Users/shelbiedavis1/Multi-State Simulation/SAM_Weather_Files/{year} Weather Files/{lat}_{lon}_SAM_final.csv'
+        output_file_path = output_csv_dir / f"{lat}_{lon}_SAM_final.csv"
         await save_to_csv_with_metadata_from_parquet(parquet_df, metadata_df, output_file_path)
 
     print(f"Processed and saved data for: {lat}, {lon}")  # Debugging line
@@ -136,9 +148,6 @@ async def process_file(file_path, nc_data, folder_path):
 # Main function with semaphore, progress, and time tracking
 async def main():
     print("Starting main function")  # Debugging line
-    # Define paths for the Parquet folder and NetCDF file
-    folder_path = Path(f"/Users/shelbiedavis1/Multi-State Simulation/NSRDB_parquet/{year}_NSRDB_parquet")
-    nc_file_path = f'/Users/shelbiedavis1/Multi-State Simulation/Weather Files/4km_SWE_Depth_WY{year}_v01.nc'
 
     # Set the maximum number of concurrent tasks (adjusted for better control)
     max_concurrent_tasks = 20  # Reduced from 100 to avoid resource overload
@@ -148,48 +157,42 @@ async def main():
     nc_data = xr.open_dataset(nc_file_path)
 
     # Prepare for progress and time tracking
-    total_files = len([file for file in folder_path.glob("*.parquet") if re.match(r"[-+]?\d*\.\d+_[-+]?\d*\.\d+\.parquet$", file.name)])
+    matching_files = [
+        file for file in folder_path.glob("*.parquet")
+        if re.match(r"[-+]?\d*\.\d+_[-+]?\d*\.\d+\.parquet$", file.name)
+    ]
+    total_files = len(matching_files)
     print(f"Total files to process: {total_files}")  # Debugging line
-    counter = 0  # Counter to track completed tasks
-    counter_lock = asyncio.Lock()  # Lock to prevent race conditions
-    start_time = time.time()  # Record the start time
 
-    # Helper function to wrap `process_file` with semaphore, progress, and time tracking
+    counter = 0
+    counter_lock = asyncio.Lock()
+    start_time = time.time()
+
+    # Helper function to wrap `process_file` with semaphore and progress tracking
     async def sem_task(file_path):
         nonlocal counter
-        async with semaphore:  # Enforce max concurrency
+        async with semaphore:
             await process_file(file_path, nc_data, folder_path)
 
-            # Update and print progress with time tracking
+            # Update and print progress
             async with counter_lock:
                 counter += 1
-                elapsed_time = time.time() - start_time  # Calculate elapsed time
-                progress = (counter / total_files) * 100  # Calculate percentage
+                elapsed_time = time.time() - start_time
+                progress = (counter / total_files) * 100
                 print(f"Progress: {counter}/{total_files} files processed ({progress:.2f}%), Elapsed Time: {elapsed_time:.2f} seconds")
 
-
-    # Create a list of tasks, each wrapped with the semaphore
-    tasks = [sem_task(file) for file in folder_path.glob("*.parquet") if re.match(r"[-+]?\d*\.\d+_[-+]?\d*\.\d+\.parquet$", file.name)]
-    await asyncio.gather(*tasks)  # Run all tasks concurrently
+    # Launch all tasks
+    tasks = [sem_task(file) for file in matching_files]
+    await asyncio.gather(*tasks)
 
     print("Main function completed")  # Debugging line
 
 # Apply nest_asyncio to allow nested event loops
 nest_asyncio.apply()
-    
+
 # Wrapper function to run the async main function
 def run_async_main():
     asyncio.run(main())
 
 # Run the async main function
 run_async_main()
-#if __name__ == "__main__":
-#    asyncio.run(main())
-
-
-# This refactored code improves concurrency management, adds error handling, and reduces task load per batch.
-# To run the main function, use the following:
-# loop = asyncio.get_event_loop()
-# loop.run_until_complete(main())
-
-# This code should be directly executable within an asyncio-compatible environment like Jupyter Notebook or an async-enabled Python script.
