@@ -20,7 +20,6 @@ matplotlib==3.10.3
 multidict==6.6.3
 nest-asyncio==1.6.0
 netCDF4==1.7.2
-NREL-PySAM==7.0.0
 numpy==2.3.2
 packaging==25.0
 pandas==2.3.1
@@ -30,7 +29,6 @@ pvlib==0.13.0
 pyarrow==21.0.0
 pycparser==2.22
 pyparsing==3.2.3
-pysam==0.23.3
 python-dateutil==2.9.0.post0
 pytz==2025.2
 requests==2.32.4
@@ -42,3 +40,4 @@ tzdata==2025.2
 urllib3==2.5.0
 xarray==2025.7.1
 yarl==1.20.1
+nrel-pysam==7.1.0
