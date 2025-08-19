@@ -3,3 +3,58 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# Ignore data outputs
+#*.csv
+#*.parquet
+#*.nc
+#*.h5
+#*.zip
+
+# Ignore folders on external drive
+/Volumes/Wickett SSD/Snow_Loss_Project
+
+# Ignore all Snow Data files
+/Data/Snow Data/4km_SWE_Depth_WY1983_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY1984_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY1985_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY1986_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY1987_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY1988_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY1989_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY1990_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY1991_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY1992_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY1993_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY1994_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY1995_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY1996_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY1997_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY1998_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY1999_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2000_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2001_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2002_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2003_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2004_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2005_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2006_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2007_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2008_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2009_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2010_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2011_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2012_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2013_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2014_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2015_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2016_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2017_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2018_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2019_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2020_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2021_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2022_v01.nc
+/Data/Snow Data/4km_SWE_Depth_WY2023_v01.nc
+
+
