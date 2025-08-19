@@ -61,7 +61,7 @@ with open(log_file_path, 'a') as log_file:
         site_data = site_dict[site_key]
         
         # Define output path
-        output_path = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results/Roof_Slide_Coeff/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv'
+        output_path = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/Roof_Slide_Coeff/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv'
 
         # Skip if file already exists
         if os.path.exists(output_path):
@@ -175,9 +175,9 @@ with open(log_file_path, 'a') as log_file:
             
             
             #Save output results csv
-            directory = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results/Roof_Slide_Coeff/{year} SAM Results/'
+            directory = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/Roof_Slide_Coeff/{year} SAM Results/'
             os.makedirs(directory, exist_ok=True)
-            output_path = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results/Roof_Slide_Coeff/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv'
+            output_path = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/Roof_Slide_Coeff/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv'
             dataframe.to_csv(output_path)
                        
             print(f"Site {site_key} executed successfully with Snow Loss.")
@@ -216,7 +216,7 @@ with open(log_file_path, 'a') as log_file:
         site_data = site_dict[site_key]
                 
         # Define output path
-        output_path = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results/No_Snow/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv'
+        output_path = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/No_Snow/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv'
 
         # Skip if file already exists
         if os.path.exists(output_path):
@@ -322,9 +322,9 @@ with open(log_file_path, 'a') as log_file:
             dataframe['Local Datetime'] = pd.Series(local_dt_strings.values, index=dataframe.index)
             
             #Save output results csv
-            directory = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results/No_Snow/{year} SAM Results/'
+            directory = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/No_Snow/{year} SAM Results/'
             os.makedirs(directory, exist_ok=True)
-            output_path = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results/No_Snow/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv'
+            output_path = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/No_Snow/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv'
             dataframe.to_csv(output_path)
                        
             print(f"Site {site_key} executed successfully with NO Snow Loss.")
