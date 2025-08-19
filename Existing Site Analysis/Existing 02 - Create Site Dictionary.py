@@ -1,6 +1,7 @@
 # Import all necessary packages
 import pandas as pd
 import json
+from pathlib import Path
 
 # Entered Variables
 # Choose a year of data from your downloaded NSIDC Data
@@ -11,6 +12,9 @@ electric_region = ['MISO','ISO-NE', 'NYISO', 'PJM','Southeast (non-ISO)', 'SPP']
 state = ['All']
 title = 'Eastern Interconnect'
 analysis_title = f'{year} {title}'
+
+# === EDIT THIS TO POINT TO YOUR EXTERNAL DRIVE ===
+BASE_DIR = Path("/Volumes/Wickett SSD/Snow_Loss_Project")
 
 # This function creates a site dictionary that includes the closest corresponding NSIDC datapoint latitudes and longitudes
 def create_site_dictionary(year, site_df):
@@ -50,7 +54,7 @@ def filter_site_df(tracking_type, year, electric_region, state, site_df):
 
 
 # Load the site data
-site_data = pd.read_csv('/Users/shelbiedavis1/Multi-State Simulation/Site Data/2024_utility-scale_solar_data_update.csv')
+site_data = pd.read_csv('Data/Site Data/2024_utility-scale_solar_data_update.csv')
 unfiltered_site_df = pd.DataFrame(site_data)
 unfiltered_site_df = unfiltered_site_df.drop(unfiltered_site_df.columns[-19:], axis=1)
 print(unfiltered_site_df['Solar COD Year'].dtype)
@@ -75,13 +79,17 @@ site_dict = create_site_dictionary(year, site_df)
 
 # Output site metadata files
 
-csv_output_path = f'/Users/shelbiedavis1/Multi-State Simulation/Existing Site Metadata Files/{year}_PV_existing_site_metadata.csv'
+csv_output_path = BASE_DIR / f'Existing Site Metadata Files/{year}_PV_existing_site_metadata.csv'
+folder = csv_output_path.parent
+folder.mkdir(parents=True, exist_ok=True)
 site_df.to_csv(csv_output_path, index=False)
 print(f"Site info CSV saved to {csv_output_path}")
 
 
 # Save the dictionary to a JSON file
-json_file_path = f'/Users/shelbiedavis1/Multi-State Simulation/Project json files/{analysis_title} Analysis.json'
+json_file_path = BASE_DIR / f'Project json files/{analysis_title} Analysis.json'
+folder = json_file_path.parent
+folder.mkdir(parents=True, exist_ok=True)
 with open(json_file_path, 'w') as json_file:
     json.dump(site_dict, json_file, indent=4)
 
