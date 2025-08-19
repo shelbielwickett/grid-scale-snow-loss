@@ -1,20 +1,34 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Updated on 8/19/25 to use portable file paths for GitHub sharing
+@author: shelbielwickett
+"""
 # Import all necessary packages
 import pandas as pd
 import json
 from pathlib import Path
 
-# Entered Variables
-# Choose a year of data from your downloaded NSIDC Data
+
+# === EDIT YEAR ===
 year = 2022
+
+# === EDIT TRACKING TYPE ===
 tracking_type = ['All']
-#electric_region = ['MISO']
+
+# === EDIT ELECTRIC REGION ===
 electric_region = ['MISO','ISO-NE', 'NYISO', 'PJM','Southeast (non-ISO)', 'SPP']
+
+# === EDIT STATE ===
 state = ['All']
+
+# === EDIT TITLE ===
 title = 'Eastern Interconnect'
-analysis_title = f'{year} {title}'
 
 # === EDIT THIS TO POINT TO YOUR EXTERNAL DRIVE ===
 BASE_DIR = Path("/Volumes/Wickett SSD/Snow_Loss_Project")
+
+analysis_title = f'{year} {title}'
 
 # This function creates a site dictionary that includes the closest corresponding NSIDC datapoint latitudes and longitudes
 def create_site_dictionary(year, site_df):
