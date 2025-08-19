@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Updated on 8/18/25 to use portable file paths for GitHub sharing
+@author: shelbielwickett
+"""
+
 from pathlib import Path
 import asyncio
 import pandas as pd
@@ -8,7 +15,7 @@ import re
 import time
 import nest_asyncio
 
-# Define the year for data processing
+# === EDIT YEAR ===
 year = 2022
 
 # === EDIT THIS TO POINT TO YOUR EXTERNAL DRIVE ===
