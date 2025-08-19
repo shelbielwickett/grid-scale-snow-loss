@@ -5,6 +5,9 @@ Created on Tuesday, April 15, 2025 at 4:56 PM
 
 This code is an updated version of a previous code. 
 This code outputs a PySAM file that now includes both local time and UTC.
+
+Updated on 8/19/25 to use portable file paths for GitHub sharing
+@author: shelbielwickett
 """
 
 # Import all necessary packages
@@ -14,13 +17,16 @@ import json
 import os
 from timezonefinder import TimezoneFinder
 import pytz
+from pathlib import Path
 
+# === EDIT THIS PATH ===
+BASE_DIR = Path("/Volumes/Wickett SSD/Snow_Loss_Project")
 
+# === EDIT YEAR ===
+year = 2022
 
-# Enter Analysis Start and End Year
-year = 2021
-# Enter Project File Name without .json ending
-file = f"{year} Total Existing Eastern Interconnect Analysis"
+# === EDIT PROJECT SITE DICTIONARY FILE NAME ===
+file = f"{year} Eastern Interconnect Analysis.json"
 
 # %% Snow Loss Simulation
 
@@ -28,7 +34,8 @@ file = f"{year} Total Existing Eastern Interconnect Analysis"
 system_model = pv.new()
 
 # load site dictionary from json
-with open('/Users/shelbiedavis1/Multi-State Simulation/Project json files/' + file + '.json') as f:
+JSON_DIR = BASE_DIR / "Project json files"
+with open(JSON_DIR / file) as f:
     site_dict = json.load(f)
 
 # Set up the PVWatts System Model with no financial analysis
@@ -39,7 +46,11 @@ system_model.SystemDesign.en_snowloss = 1
 
 # Initialize variables for loop
 i = 0
-log_file_path = 'missing_snow_depth_log.txt'
+
+log_path = BASE_DIR / 'log_files'
+folder = log_path.parent
+folder.mkdir(parents=True, exist_ok=True)
+log_file_path = log_path / 'missing_snow_depth_log.txt'
 
 # Open log file to add generated error messages
 with open(log_file_path, 'a') as log_file:
@@ -50,7 +61,7 @@ with open(log_file_path, 'a') as log_file:
         site_data = site_dict[site_key]
         
         # Define output path
-        output_path = '/Users/shelbiedavis1/Multi-State Simulation/PySAM_Results_UTC/Existing_Sites_Results/Roof_Slide_Coeff/'+str(year)+' SAM Results/'+site_data['Project Name']+'_'+str(year)+'_Results.csv'
+        output_path = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results/Roof_Slide_Coeff/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv'
 
         # Skip if file already exists
         if os.path.exists(output_path):
@@ -93,8 +104,8 @@ with open(log_file_path, 'a') as log_file:
             lat = site_data['Latitude']
             lon = site_data['Longitude']
             #assign weather file path
-            weather_file = f'/Users/shelbiedavis1/Multi-State Simulation/SAM_Weather_Files/{year} Weather Files/{lat}_{lon}_SAM_final.csv'
-            system_model.value('solar_resource_file', weather_file) #assign weather file
+            weather_file = BASE_DIR / f'SAM_Weather_Files/{year} Weather Files/{lat}_{lon}_SAM_final.csv'
+            system_model.value('solar_resource_file', str(weather_file)) #assign weather file
             
             weather_df = pd.read_csv(weather_file, skiprows=1) #skip first two rows
             weather_df.columns = weather_df.iloc[0]  # Set columns
@@ -139,14 +150,7 @@ with open(log_file_path, 'a') as log_file:
             dictionary = {'AC Inverter Output Power [W]': ac, 'DC Inverter Input Power [W]':dc, 'DC Power Loss Due to Snow [%]': dcsnowderate, 'System Power Generated [kW]': gen, 'Weather File Snow Depth': snow, 'poa':poa, 'tamb': tamb}
             dataframe = pd.DataFrame(dictionary)
             
-            """
-            #OLD CODE
-            #Adjust index to match weather_df for saving
-            # weather_df['Datetime'] = pd.to_datetime(weather_df[['Year', 'Month', 'Day', 'Hour', 'Minute']])
-            # weather_df.set_index('Datetime', inplace=True)
-            # dataframe.index = weather_df.index
-            # Create naive datetime (assumed to be in local standard time from weather file)
-            """
+
             #change the columns from the weather file dataframe to local time timestamps
             naive_dt = pd.to_datetime(weather_df[['Year', 'Month', 'Day', 'Hour', 'Minute']])
 
@@ -171,9 +175,9 @@ with open(log_file_path, 'a') as log_file:
             
             
             #Save output results csv
-            directory = '/Users/shelbiedavis1/Multi-State Simulation/PySAM_Results_UTC/Existing_Sites_Results/Roof_Slide_Coeff/'+str(year)+' SAM Results/'
+            directory = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results/Roof_Slide_Coeff/{year} SAM Results/'
             os.makedirs(directory, exist_ok=True)
-            output_path = '/Users/shelbiedavis1/Multi-State Simulation/PySAM_Results_UTC/Existing_Sites_Results/Roof_Slide_Coeff/'+str(year)+' SAM Results/'+site_data['Project Name']+'_'+str(year)+'_Results.csv'
+            output_path = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results/Roof_Slide_Coeff/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv'
             dataframe.to_csv(output_path)
                        
             print(f"Site {site_key} executed successfully with Snow Loss.")
@@ -190,7 +194,8 @@ with open(log_file_path, 'a') as log_file:
 system_model = pv.new()
 
 # load site dictionary from json
-with open('/Users/shelbiedavis1/Multi-State Simulation/Project json files/' + file + '.json') as f:
+
+with open(JSON_DIR / file) as f:
     site_dict = json.load(f)
 
 # Set up the PVWatts System Model with no financial analysis
@@ -201,7 +206,6 @@ system_model.SystemDesign.en_snowloss = 0
 
 # Initialize variables for loop
 i = 0
-log_file_path = 'missing_snow_depth_log.txt'
 
 # Open log file to add generated error messages
 with open(log_file_path, 'a') as log_file:
@@ -212,7 +216,7 @@ with open(log_file_path, 'a') as log_file:
         site_data = site_dict[site_key]
                 
         # Define output path
-        output_path = '/Users/shelbiedavis1/Multi-State Simulation/PySAM_Results_UTC/Existing_Sites_Results/No_Snow/'+str(year)+' SAM Results/'+site_data['Project Name']+'_'+str(year)+'_Results.csv'
+        output_path = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results/No_Snow/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv'
 
         # Skip if file already exists
         if os.path.exists(output_path):
@@ -250,8 +254,8 @@ with open(log_file_path, 'a') as log_file:
             lat = site_data['Latitude']
             lon = site_data['Longitude']
             # Example weather file (change as needed)
-            weather_file = f'/Users/shelbiedavis1/Multi-State Simulation/SAM_Weather_Files/{year} Weather Files/{lat}_{lon}_SAM_final.csv'
-            system_model.value('solar_resource_file', weather_file)
+            weather_file = BASE_DIR / f'SAM_Weather_Files/{year} Weather Files/{lat}_{lon}_SAM_final.csv'
+            system_model.value('solar_resource_file', str(weather_file))
             
             weather_df = pd.read_csv(weather_file, skiprows=1)
             weather_df.columns = weather_df.iloc[0]
@@ -294,13 +298,6 @@ with open(log_file_path, 'a') as log_file:
             dictionary = {'AC Inverter Output Power [W]': ac, 'DC Inverter Input Power [W]':dc, 'DC Power Loss Due to Snow [%]': dcsnowderate, 'System Power Generated [kW]': gen, 'Weather File Snow Depth': snow, 'poa':poa, 'tamb':tamb}
             dataframe = pd.DataFrame(dictionary)
             
-            """OLD CODE
-            #Adjust index to match weather_df for saving
-            # weather_df['Datetime'] = pd.to_datetime(weather_df[['Year', 'Month', 'Day', 'Hour', 'Minute']])
-            # weather_df.set_index('Datetime', inplace=True)
-            # dataframe.index = weather_df.index
-            # Create naive datetime (assumed to be in local standard time from weather file)
-            """
             
             #change the columns from the weather file dataframe to local time timestamps
             naive_dt = pd.to_datetime(weather_df[['Year', 'Month', 'Day', 'Hour', 'Minute']])
@@ -325,9 +322,9 @@ with open(log_file_path, 'a') as log_file:
             dataframe['Local Datetime'] = pd.Series(local_dt_strings.values, index=dataframe.index)
             
             #Save output results csv
-            directory = '/Users/shelbiedavis1/Multi-State Simulation/PySAM_Results_UTC/Existing_Sites_Results/No_Snow/'+str(year)+' SAM Results/'
+            directory = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results/No_Snow/{year} SAM Results/'
             os.makedirs(directory, exist_ok=True)
-            output_path = '/Users/shelbiedavis1/Multi-State Simulation/PySAM_Results_UTC/Existing_Sites_Results/No_Snow/'+str(year)+' SAM Results/'+site_data['Project Name']+'_'+str(year)+'_Results.csv'
+            output_path = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results/No_Snow/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv'
             dataframe.to_csv(output_path)
                        
             print(f"Site {site_key} executed successfully with NO Snow Loss.")
