@@ -10,18 +10,21 @@ import json
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from pathlib import Path
 
 # %% [2] User-Defined Data
 # Enter Analysis Start and End Year
-start_year = 2013
+start_year = 2022
 end_year = 2022
-#title = 'MISO'
 title = 'Eastern Interconnect'
 months = [12, 1, 2] #winter
 #months = [3,4,5] #spring
 #months = [1,2,3,4,5,6,7,8,9,10,11,12]
 timeframe = 'winter'
 lat_min = 0
+
+# === EDIT THIS PATH ===
+BASE_DIR = Path("/Volumes/Wickett SSD/Snow_Loss_Project")
 
 # %% [3] Data Processing
 
@@ -37,7 +40,9 @@ for year in range(start_year, end_year + 1):
     mount_type_list = []
 
     file = f"{year} {title} Analysis"
-    with open('/Users/shelbiedavis1/Multi-State Simulation/Project json files/' + file + '.json') as f:
+    JSON_DIR = BASE_DIR / "Project json files"
+    file = f"{year} {title} Analysis.json"
+    with open(JSON_DIR / file) as f:
         site_dict = json.load(f)
     
 
@@ -73,8 +78,10 @@ for year in range(start_year, end_year + 1):
     
     
         # Load No Snow data using the UTC datetime index
+        SAM_no_snow_file = str(BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results_UTC/No_Snow/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv')
+        print(SAM_no_snow_file)
         SAM_no_snow = pd.read_csv(
-           f'/Volumes/Wickett SSD/PySAM_Results/Existing_Sites_Results/No_Snow/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv',
+           SAM_no_snow_file,
            index_col=0,
            parse_dates=True
            )
@@ -89,7 +96,7 @@ for year in range(start_year, end_year + 1):
         
         # Load Snow data
         SAM_snow = pd.read_csv(
-            f'/Volumes/Wickett SSD/PySAM_Results/Existing_Sites_Results/Roof_Slide_Coeff/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv',
+            BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results_UTC/Roof_Slide_Coeff/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv',
             index_col=0,
             parse_dates=True
             )
@@ -123,21 +130,6 @@ for year in range(start_year, end_year + 1):
 
 print(yearly_dfs)
 
-
-    
-# Simulate the structure of yearly_dfs dictionary for demonstration
-# yearly_dfs = {
-#     2012: {
-#         '2012 No Snow Total DC Inverter Input Power [W]': [100, 200, 300],
-#         '2012 Snow Total DC Inverter Input Power [W]': [90, 180, 270],
-#         '2012 Mount': ['tracking', 'fixed', 'tracking']
-#     },
-#     2013: {
-#         '2013 No Snow Total DC Inverter Input Power [W]': [110, 220, 330],
-#         '2013 Snow Total DC Inverter Input Power [W]': [100, 200, 310],
-#         '2013 Mount': ['fixed', 'tracking', 'fixed']
-#     }
-# }
 
 # Initialize data structures for the bar chart
 years = sorted(yearly_dfs.keys())
@@ -562,11 +554,15 @@ plt.xticks(rotation=45)
 ax.yaxis.grid(True, linestyle='-', linewidth=0.5, alpha=0.5, zorder=0)
 ax.set_axisbelow(True)  # Ensures grid lines are behind bars
 
+fig_dir= BASE_DIR / 'Figures'
+folder = fig_dir.parent
+folder.mkdir(parents=True, exist_ok=True)
+
 plt.tight_layout()
 # Save the figure
 #fig.savefig(f"/volumes/wickett SSD/existing_site_{timeframe}_energy_generation_above_{lat_min}_stacked.png", dpi=300, bbox_inches="tight")
 #fig.savefig("Figures/test.pdf", format='pdf', bbox_inches="tight")
-#fig.savefig("/Volumes/Wickett SSD/Figures/Fig_2.pdf", format='pdf', bbox_inches='tight')
+fig.savefig(BASE_DIR / f'Figures/Yearly or Seasonal Figure.pdf', format='pdf', bbox_inches='tight')
 plt.show()
 
 
