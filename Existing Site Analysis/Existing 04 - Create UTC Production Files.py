@@ -5,6 +5,8 @@ Created on Wed Apr 30 17:55:21 2025
 
 @author: shelbiedavis1
 This code changes the local time PySAM output to full UTC year output
+Updated on 8/19/25 to use portable file paths for GitHub sharing
+
 """
 
 # import packages
@@ -12,21 +14,31 @@ import pandas as pd
 import json
 import os
 from datetime import datetime
+from pathlib import Path
 
-# Enter Analysis Year
+# === EDIT THIS PATH ===
+BASE_DIR = Path("/Volumes/Wickett SSD/Snow_Loss_Project")
+
+# === EDIT YEAR ===
 year = 2022
 
-# Enter Project File Name without .json ending
-file = f"{year} Eastern Interconnect Analysis"
+# === EDIT PROJECT SITE DICTIONARY FILE NAME ===
+file = f"{year} Eastern Interconnect Analysis.json"
 
 # load site dictionary from json
-with open('/Users/shelbiedavis1/Multi-State Simulation/Project json files/' + file + '.json') as f:
+JSON_DIR = BASE_DIR / "Project json files"
+with open(JSON_DIR / file) as f:
     site_dict = json.load(f)
 
 # %% Snow Data
 # initialize loop variables
-i = 0    
-log_file_path = 'missing_local_time_file_log.txt'
+i = 0
+
+log_path = BASE_DIR / 'log_files'
+folder = log_path.parent
+folder.mkdir(parents=True, exist_ok=True)
+log_file_path = log_path / 'missing_local_time_file_log.txt'
+
 year_early = year-1
 year_late = year+1
 
@@ -39,9 +51,9 @@ with open(log_file_path, 'a') as log_file:
         site_data = site_dict[site_key]
         
         try:            
-            file_early = '/Users/shelbiedavis1/Multi-State Simulation/PySAM_Results_UTC/Existing_Sites_Results/Roof_Slide_Coeff/'+str(year_early)+' SAM Results/'+site_data['Project Name']+'_'+str(year_early)+'_Results.csv'
-            file_name = '/Users/shelbiedavis1/Multi-State Simulation/PySAM_Results_UTC/Existing_Sites_Results/Roof_Slide_Coeff/'+str(year)+' SAM Results/'+site_data['Project Name']+'_'+str(year)+'_Results.csv'
-            file_late = '/Users/shelbiedavis1/Multi-State Simulation/PySAM_Results_UTC/Existing_Sites_Results/Roof_Slide_Coeff/'+str(year_late)+' SAM Results/'+site_data['Project Name']+'_'+str(year_late)+'_Results.csv'
+            file_early = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/Roof_Slide_Coeff/{year_early} SAM Results/{site_data["Project Name"]}_{year_early}_Results.csv'
+            file_name = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/Roof_Slide_Coeff/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv'
+            file_late = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/Roof_Slide_Coeff/{year_late} SAM Results/{site_data["Project Name"]}_{year_late}_Results.csv'
             
             # Load CSVs into a DataFrames
             df_early = pd.read_csv(file_early)
@@ -79,7 +91,7 @@ with open(log_file_path, 'a') as log_file:
                 print(f"ℹ️ Note: {year} is a leap year, but SAM omits Feb 29. Expecting 8760 hours.")
             
             # Define output directory (create it if needed)
-            output_dir = '/Users/shelbiedavis1/Multi-State Simulation/PySAM_Results/Existing_Sites_Results_Full_UTC/Roof_Slide_Coeff/'+str(year)+' SAM Results/'
+            output_dir = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results_UTC/Roof_Slide_Coeff/{year} SAM Results/'
             os.makedirs(output_dir, exist_ok=True)
     
             # Construct output filename
@@ -113,7 +125,7 @@ with open(log_file_path, 'a') as log_file:
 # %% No Snow Data
 # initialize loop variables
 i = 0    
-log_file_path = 'missing_local_time_file_log.txt'
+#log_file_path = 'missing_local_time_file_log.txt'
 year_early = year-1
 year_late = year+1
 
@@ -126,9 +138,9 @@ with open(log_file_path, 'a') as log_file:
         site_data = site_dict[site_key]
         
         try:            
-            file_early = '/Users/shelbiedavis1/Multi-State Simulation/PySAM_Results_UTC/Existing_Sites_Results/No_Snow/'+str(year_early)+' SAM Results/'+site_data['Project Name']+'_'+str(year_early)+'_Results.csv'
-            file_name = '/Users/shelbiedavis1/Multi-State Simulation/PySAM_Results_UTC/Existing_Sites_Results/No_Snow/'+str(year)+' SAM Results/'+site_data['Project Name']+'_'+str(year)+'_Results.csv'
-            file_late = '/Users/shelbiedavis1/Multi-State Simulation/PySAM_Results_UTC/Existing_Sites_Results/No_Snow/'+str(year_late)+' SAM Results/'+site_data['Project Name']+'_'+str(year_late)+'_Results.csv'
+            file_early = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/No_Snow/{year_early} SAM Results/{site_data["Project Name"]}_{year_early}_Results.csv'
+            file_name = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/No_Snow/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv'
+            file_late = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/No_Snow/{year_late} SAM Results/{site_data["Project Name"]}_{year_late}_Results.csv'
             
             # Load CSVs into a DataFrames
             df_early = pd.read_csv(file_early)
@@ -166,7 +178,7 @@ with open(log_file_path, 'a') as log_file:
                 print(f"ℹ️ Note: {year} is a leap year, but SAM omits Feb 29. Expecting 8760 hours.")
             
             # Define output directory (create it if needed)
-            output_dir = '/Users/shelbiedavis1/Multi-State Simulation/PySAM_Results/Existing_Sites_Results_Full_UTC/No_Snow/'+str(year)+' SAM Results/'
+            output_dir = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results_UTC/No_Snow/{year} SAM Results/'
             os.makedirs(output_dir, exist_ok=True)
     
             # Construct output filename
