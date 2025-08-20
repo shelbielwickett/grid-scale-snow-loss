@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Nov 16 22:06:29 2024
-
+Updated on 8/20/25 to use portable file paths for GitHub sharing.
+Figure formatting still needs work.
 @author: shelbiedavis1
 """
 
@@ -10,19 +11,19 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
+from pathlib import Path
 
-#max 2022
-#start_date = '2022-01-14 00:30:00' #date and time in yyyy-mm-dd hh:mm:ss
-#end_date = '2022-01-23 23:00:00' #date and time in yyyy-mm-dd hh:mm:ss
-#max 2018
-start_date = '2014-01-10 00:30:00-05:00' #date and time in yyyy-mm-dd hh:mm:ss
-end_date = '2014-01-12 23:00:00-05:00' #date and time in yyyy-mm-dd hh:mm:ss
-#site_name = 'Indianapolis Motor Speedway (IMS) Solar Farm' #name of solar site
+#Snow event details
+start_date = '2022-01-10 00:30:00-05:00' #date and time in yyyy-mm-dd hh:mm:ss
+end_date = '2022-01-12 23:00:00-05:00' #date and time in yyyy-mm-dd hh:mm:ss
 site_name = 'Apple Data Center- PV1'
-#site_name = 'Gulf Coast Solar Center 2 (NAS Whiting Field  NOLF Holley)'
+
+# === EDIT THIS PATH ===
+BASE_DIR = Path("/Volumes/Wickett SSD/Snow_Loss_Project")
+
 not_covered = 'existing_sites_no_snow_model_results'
 covered = 'existing_sites_snow_model_results'
-batch = 'Existing'
+
 
 # Create a date range with daily frequency
 date_list = pd.date_range(start=start_date, end=end_date, freq='D')
@@ -31,48 +32,45 @@ print(date_list)
 # Format the dates as 'm/d/yy'
 formatted_dates = [date.strftime('%-m/%-d/%y') for date in date_list]
 
-
+#Change beginning and end of snow event to Datetime format
 start_date = pd.to_datetime(start_date)
 end_date = pd.to_datetime(end_date)
 year = start_date.year
-file_name = site_name + '_' + str(year) +'_Results.csv'
-file_path_no_snow = f'/Users/shelbiedavis1/Multi-State Simulation/PySAM_Results/Existing_Sites_Results_Full_UTC/No_Snow/{year} SAM Results/Apple Data Center- PV1_{year}_Results.csv'
-date_range = [start_date, end_date]
 
-df_no_snow = pd.read_csv(file_path_no_snow)
-print(df_no_snow.iloc[:,:3])
+#Define paths and file names
+path_no_snow = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results_UTC/No_Snow/{year} SAM Results'
+path_snow = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results_UTC/Roof_Slide_Coeff/{year} SAM Results'
+file_name = f'{site_name}_{str(year)}_Results.csv'
 
-file_path_snow = f'/Users/shelbiedavis1/Multi-State Simulation/PySAM_Results/Existing_Sites_Results_Full_UTC/Roof_Slide_Coeff/{year} SAM Results/Apple Data Center- PV1_{year}_Results.csv'
 
-df_snow = pd.read_csv(file_path_snow)
-print(df_snow.head(50))
-
-# Ensure the Datetime column in both DataFrames is in datetime format
-df_no_snow['Local Datetime'] = pd.to_datetime(df_no_snow['Local Datetime'])
-df_snow['Local Datetime'] = pd.to_datetime(df_snow['Local Datetime'])
+def read_results(year: str, file_name: str, path: Path):
+    try:
+        df = pd.read_csv(path / file_name)
+        #Make sure Datetime column in DataFrame is in datetime format
+        df['Local Datetime'] = pd.to_datetime(df['Local Datetime'])
+        return df
+    except FileNotFoundError:
+        msg = f'File not found: {path}'
+        
+#Read results files
+df_no_snow = read_results(year, file_name, path_no_snow)
+df_snow = read_results(year, file_name, path_snow)
 
 # Filter the dataframes by the given datetime range
+date_range = [start_date, end_date]
 df_no_snow_filtered = df_no_snow[(df_no_snow['Local Datetime'] >= start_date) & (df_no_snow['Local Datetime'] <= end_date)]
 df_snow_filtered = df_snow[(df_snow['Local Datetime'] >= start_date) & (df_snow['Local Datetime'] <= end_date)]
-print(df_snow_filtered.head(50))
+
 
 # Determine Mount Type
-if batch == 'Existing':
-    site_data = pd.read_csv('/Users/shelbiedavis1/Multi-State Simulation/Site Data/2023_utility-scale_solar_data_update.csv')
-    #site_data_df = pd.to_dataframe(site_data)
-    # Find the mounting type using .loc
-    mounting_type = site_data.loc[site_data['Project Name'] == site_name, 'Mount'].iloc[0]
-    state = site_data.loc[site_data['Project Name'] == site_name, 'State'].iloc[0]
-    print(mounting_type)
-else:
-    site_data = pd.read_csv('/Users/shelbiedavis1/Multi-State Simulation/Site Data/queues_2023_clean_data_r1.csv')
+site_data = pd.read_csv('Data/Site Data/2024_utility-scale_solar_data_update.csv')
+# Find the mounting type using .loc
+mounting_type = site_data.loc[site_data['Project Name'] == site_name, 'Mount'].iloc[0]
+state = site_data.loc[site_data['Project Name'] == site_name, 'State'].iloc[0]
 
-
-import matplotlib.pyplot as plt
-import pandas as pd
 
 # Create a figure with two subplots stacked vertically
-fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(14, 12), sharex=True)
+fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(6, 4), sharex=True)
 
 # Plot 1: DC Input Power and Weather File Snow Depth
 ax1 = axes[0]
@@ -162,7 +160,5 @@ date_formatter = mdates.DateFormatter('%-m/%-d/%y')
 plt.tight_layout()
 
 # Save the figure
-#fig.savefig(f"Figures/Sites/{site_name}_{start_date}_to_{end_date}_stacked.png", dpi=300, bbox_inches="tight")
-
-# Show the plot
+fig.savefig(BASE_DIR / f'Figures/Snow Event Figure.pdf', format='pdf', bbox_inches='tight')
 plt.show()
