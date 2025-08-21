@@ -8,7 +8,7 @@ This code changes the local time PySAM output to full UTC year output
 Updated on 8/19/25 to use portable file paths for GitHub sharing
 
 """
-
+####################### Library Imports #############################
 # import packages
 import pandas as pd
 import json
@@ -16,7 +16,9 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-# === EDIT THIS PATH ===
+####################### User Defined Constants #############################
+
+# === CHOOSE BASE DIRECTORY ===
 BASE_DIR = Path("/Volumes/Wickett SSD/Snow_Loss_Project")
 
 # === EDIT YEAR ===
@@ -25,6 +27,7 @@ year = 2022
 # === EDIT PROJECT SITE DICTIONARY FILE NAME ===
 file = f"{year} Eastern Interconnect Analysis.json"
 
+####################### OTHER Constants #############################
 # load site dictionary from json
 JSON_DIR = BASE_DIR / "Project json files"
 with open(JSON_DIR / file) as f:
@@ -37,6 +40,8 @@ log_file_path = log_path / 'missing_local_time_file_log.txt'
 
 year_early = year-1
 year_late = year+1
+
+####################### Define All Functions #############################
 
 # Helper Function - Safely read CSVs
 def read_csv_or_empty(path: Path, template_cols, label: str, site_key: str, log_file):
