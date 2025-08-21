@@ -52,6 +52,62 @@ def read_csv_or_empty(path: Path, template_cols, label: str, site_key: str, log_
         # empty frame with same columns as current-year df to keep concat
         return pd.DataFrame(columns=template_cols)
     
+# Helper Function - Make years full 8760 hours
+def pad_utc_year(df: pd.DataFrame, year: int) -> pd.DataFrame:
+    """
+    Ensures the df has every hourly UTC timestamp (8760 hours).
+    Missing hours are filled with 0's if numeric columns and '' if string columns.
+    Drops duplicate timestamps (keeps first timestamp) and sorts by index.
+    """
+    df = df.copy()
+
+    # Make sure there is UTC datetime index named 'UTC'
+    if "UTC" in df.columns and df.index.name != "UTC": #If there is no index named "UTC," create one and insert as index.
+        df["UTC"] = pd.to_datetime(df["UTC"], utc=True, errors="coerce")
+        df = df.dropna(subset=["UTC"]).set_index("UTC")
+    else: #If there is an index named "UTC," make sure it is in datetime/UTC format and has no Nan values
+        df.index = pd.to_datetime(df.index, utc=True, errors="coerce")
+        df = df[~df.index.isna()]
+        df.index.name = "UTC"
+
+    # Make tz-aware UTC
+    if df.index.tz is None: 
+        df.index = df.index.tz_localize("UTC") #attaches timezone to timestamp without shifting clock time
+    else:
+        df.index = df.index.tz_convert("UTC") #converts already tz-aware timestamp to UTC, shifting the clock
+
+    # add 30 mins to each time stamp
+    df.index = df.index.floor("h") + pd.Timedelta(minutes=30)
+
+    # remove duplicate timestamps (if any) and sort
+    if df.index.has_duplicates:
+        df = df[~df.index.duplicated(keep="first")]
+    df = df.sort_index()
+
+    # build full UTC index
+    start_utc = pd.Timestamp(f"{year}-01-01 00:30:00", tz="UTC")
+    end_utc = pd.Timestamp(f"{year+1}-01-01 00:30:00", tz="UTC")
+    full_idx = pd.date_range(start=start_utc, end=end_utc - pd.Timedelta(hours=1), freq="h", tz="UTC")
+
+    # eliminate leap day from leap years
+    if pd.Timestamp(f"{year}-01-01").is_leap_year:
+        full_idx = full_idx[~((full_idx.month == 2) & (full_idx.day == 29))]
+
+    # re-index df to have full_idx
+    df_out = df.reindex(full_idx)
+
+    # Fill Nans with zero or ''
+    num_cols = df_out.select_dtypes(include="number").columns
+    obj_cols = df_out.columns.difference(num_cols)
+    if len(num_cols):
+        df_out[num_cols] = df_out[num_cols].fillna(0)
+    if len(obj_cols):
+        df_out[obj_cols] = df_out[obj_cols].fillna("")
+    
+    df_out.index.name = 'UTC'
+
+    return df_out
+
 # Helper Function - Process scenarios
 def process_scenario(scenario_folder_name: str):
     out_scenario = "Roof_Slide_Coeff" if "Roof_Slide_Coeff" in scenario_folder_name else "No_Snow"
@@ -114,6 +170,9 @@ def process_scenario(scenario_folder_name: str):
 
                 #Slice UTC year range
                 df_year = df_all.loc[start_utc:end_utc - pd.Timedelta(seconds=1)].copy()
+                df_year = pad_utc_year(df_year,year)
+                
+                print(f"[{out_scenario}] {site_key} -> {len(df_year)} rows (expected 8760)")
                 
                 expected_hours = 8760
                 if len(df_year) != expected_hours:
@@ -150,172 +209,11 @@ def process_scenario(scenario_folder_name: str):
                 log_file.write(msg + "\n")
 
 #Run both scenarios
-process_scenario("Roof_Slide_Coeff")
-process_scenario("No_Snow")
-""" 
-# Open log file to add generated error messages
-with open(log_file_path, 'a') as log_file:
-    
-    # Loop through each site in site_dict
-    for i, site_key in enumerate(site_dict):
-        print(f"Testing site {site_key} at index {i}")
-        site_data = site_dict[site_key]
-        
-        try:            
-            file_early = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/Roof_Slide_Coeff/{year_early} SAM Results/{site_data["Project Name"]}_{year_early}_Results.csv'
-            file_name = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/Roof_Slide_Coeff/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv'
-            file_late = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/Roof_Slide_Coeff/{year_late} SAM Results/{site_data["Project Name"]}_{year_late}_Results.csv'
-            
-            # Load CSVs into a DataFrames
-            df_early = pd.read_csv(file_early)
-            df = pd.read_csv(file_name)
-            try:
-                df_late = pd.read_csv(file_late)
-            except FileNotFoundError:
-                print(f"⚠️ 2023 data not found for site {site_key}, truncating end of 2022 only")
-                df_late = pd.DataFrame(columns=df.columns)  # Empty frame with same columns
-            
-            # Rename the UTC column
-            for df_ in [df_early, df, df_late]:
-                df_.rename(columns={df_.columns[0]: 'UTC'}, inplace=True)
-            
-            # Concatenate early, current, and late year DataFrames
-            df_all = pd.concat([df_early, df, df_late], ignore_index=True)
-            
-            # Ensure UTC column is parsed and timezone-aware
-            df_all['UTC'] = pd.to_datetime(df_all['UTC'], utc=True)
-            
-            # Set UTC as index for filtering
-            df_all.set_index('UTC', inplace=True)
-            
-            # Define exact UTC time window
-            start_utc = pd.Timestamp(f"{year}-01-01 00:00:00", tz='UTC')
-            end_utc = pd.Timestamp(f"{year + 1}-01-01 00:00:00", tz='UTC')
-            
-            # Slice for the desired UTC year range
-            df_year = df_all.loc[start_utc:end_utc - pd.Timedelta(seconds=1)]
-    
-            expected_hours = 8760  # Because SAM always outputs 8760 hours regardless of leap year
-            if len(df_year) != expected_hours:
-                print(f"⚠️ Warning: Got {len(df_year)} hours for site {site_key}, expected 8760 from SAM")
-            if pd.Timestamp(f"{year}-01-01").is_leap_year:
-                print(f"ℹ️ Note: {year} is a leap year, but SAM omits Feb 29. Expecting 8760 hours.")
-            
-            # Define output directory (create it if needed)
-            output_dir = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results_UTC/Roof_Slide_Coeff/{year} SAM Results/'
-            os.makedirs(output_dir, exist_ok=True)
-    
-            # Construct output filename
-            output_filename = f"{site_data['Project Name']}_{year}_Results.csv"
-            output_path = os.path.join(output_dir, output_filename)
-            
-            # Ensure you're working on a copy
-            df_year = df_year.copy()
-    
-            # Format 'Local Datetime' with full offset like '-05:00'
-            if 'Local Datetime' in df_year.columns: #check if local time column exists
-                # converts string to datetime
-                df_year['Local Datetime'] = df_year['Local Datetime'].apply(
-                    lambda x: datetime.strptime(x, '%Y-%m-%d %H:%M:%S %z') if pd.notnull(x) else None
-                    )
-                # reformats datetime
-                df_year['Local Datetime'] = df_year['Local Datetime'].apply(
-                    lambda x: x.strftime('%Y-%m-%d %H:%M:%S%z')[:-2] + ':' + x.strftime('%Y-%m-%d %H:%M:%S%z')[-2:]
-                    if pd.notnull(x) else ''
-                    )
-    
-            # Save to CSV
-            df_year.to_csv(output_path)
-    
-            print(f"Saved: {output_path}")
-        except Exception as e:
-            print(f"Error at site {site_key} (index {i}): {e}")
-            log_file.write(f"Error at site {site_key} (index {i}, {site_data['Project Name']}): {e}\n")
-#            break  # Stop at the failing site for closer inspection
-        
-# %% No Snow Data
-# initialize loop variables
-i = 0    
-#log_file_path = 'missing_local_time_file_log.txt'
-year_early = year-1
-year_late = year+1
+def main() -> int:
+    process_scenario("Roof_Slide_Coeff")
+    process_scenario("No_Snow")
 
-# Open log file to add generated error messages
-with open(log_file_path, 'a') as log_file:
-    
-    # Loop through each site in site_dict
-    for i, site_key in enumerate(site_dict):
-        print(f"Testing site {site_key} at index {i}")
-        site_data = site_dict[site_key]
-        
-        try:            
-            file_early = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/No_Snow/{year_early} SAM Results/{site_data["Project Name"]}_{year_early}_Results.csv'
-            file_name = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/No_Snow/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv'
-            file_late = BASE_DIR / f'PySAM_Results/Existing_Sites_Results/No_Snow/{year_late} SAM Results/{site_data["Project Name"]}_{year_late}_Results.csv'
-            
-            # Load CSVs into a DataFrames
-            df_early = pd.read_csv(file_early)
-            df = pd.read_csv(file_name)
-            try:
-                df_late = pd.read_csv(file_late)
-            except FileNotFoundError:
-                print(f"⚠️ 2023 data not found for site {site_key}, truncating end of 2022 only")
-                df_late = pd.DataFrame(columns=df.columns)  # Empty frame with same columns
-            
-            # Rename the UTC column
-            for df_ in [df_early, df, df_late]:
-                df_.rename(columns={df_.columns[0]: 'UTC'}, inplace=True)
-            
-            # Concatenate early, current, and late year DataFrames
-            df_all = pd.concat([df_early, df, df_late], ignore_index=True)
-            
-            # Ensure UTC column is parsed and timezone-aware
-            df_all['UTC'] = pd.to_datetime(df_all['UTC'], utc=True)
-            
-            # Set UTC as index for filtering
-            df_all.set_index('UTC', inplace=True)
-            
-            # Define exact UTC time window
-            start_utc = pd.Timestamp(f"{year}-01-01 00:00:00", tz='UTC')
-            end_utc = pd.Timestamp(f"{year + 1}-01-01 00:00:00", tz='UTC')
-            
-            # Slice for the desired UTC year range
-            df_year = df_all.loc[start_utc:end_utc - pd.Timedelta(seconds=1)]
-    
-            expected_hours = 8760  # Because SAM always outputs 8760 hours regardless of leap year
-            if len(df_year) != expected_hours:
-                print(f"⚠️ Warning: Got {len(df_year)} hours for site {site_key}, expected 8760 from SAM")
-            if pd.Timestamp(f"{year}-01-01").is_leap_year:
-                print(f"ℹ️ Note: {year} is a leap year, but SAM omits Feb 29. Expecting 8760 hours.")
-            
-            # Define output directory (create it if needed)
-            output_dir = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results_UTC/No_Snow/{year} SAM Results/'
-            os.makedirs(output_dir, exist_ok=True)
-    
-            # Construct output filename
-            output_filename = f"{site_data['Project Name']}_{year}_Results.csv"
-            output_path = os.path.join(output_dir, output_filename)
-            
-            # Ensure you're working on a copy
-            df_year = df_year.copy()
-    
-            # Format 'Local Datetime' with full offset like '-05:00'
-            if 'Local Datetime' in df_year.columns: #check if local time column exists
-                # converts string to datetime
-                df_year['Local Datetime'] = df_year['Local Datetime'].apply(
-                    lambda x: datetime.strptime(x, '%Y-%m-%d %H:%M:%S %z') if pd.notnull(x) else None
-                    )
-                # reformats datetime
-                df_year['Local Datetime'] = df_year['Local Datetime'].apply(
-                    lambda x: x.strftime('%Y-%m-%d %H:%M:%S%z')[:-2] + ':' + x.strftime('%Y-%m-%d %H:%M:%S%z')[-2:]
-                    if pd.notnull(x) else ''
-                    )
-    
-            # Save to CSV
-            df_year.to_csv(output_path)
-    
-            print(f"Saved: {output_path}")
-        except Exception as e:
-            print(f"Error at site {site_key} (index {i}): {e}")
-            log_file.write(f"Error at site {site_key} (index {i}, {site_data['Project Name']}): {e}\n")
-#            break  # Stop at the failing site for closer inspection """
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())
