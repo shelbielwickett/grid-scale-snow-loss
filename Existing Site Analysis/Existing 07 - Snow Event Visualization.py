@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Sat Nov 16 22:06:29 2024
 Updated on 8/20/25 to use portable file paths for GitHub sharing.
 Figure formatting still needs work.
 @author: shelbiedavis1
 """
-
+####################### Library Imports #############################
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
 from pathlib import Path
 
-#Snow event details
+####################### User Defined Constants #############################
 start_date = '2022-01-10 00:30:00-05:00' #date and time in yyyy-mm-dd hh:mm:ss
 end_date = '2022-01-12 23:00:00-05:00' #date and time in yyyy-mm-dd hh:mm:ss
 site_name = 'Apple Data Center- PV1'
@@ -21,6 +20,7 @@ site_name = 'Apple Data Center- PV1'
 # === EDIT THIS PATH ===
 BASE_DIR = Path("/Volumes/Wickett SSD/Snow_Loss_Project")
 
+####################### OTHER Constants #############################
 not_covered = 'existing_sites_no_snow_model_results'
 covered = 'existing_sites_snow_model_results'
 
@@ -42,7 +42,7 @@ path_no_snow = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results_UTC/No_Snow
 path_snow = BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results_UTC/Roof_Slide_Coeff/{year} SAM Results'
 file_name = f'{site_name}_{str(year)}_Results.csv'
 
-
+####################### Define All Functions #############################
 def read_results(year: str, file_name: str, path: Path):
     try:
         df = pd.read_csv(path / file_name)
@@ -51,7 +51,9 @@ def read_results(year: str, file_name: str, path: Path):
         return df
     except FileNotFoundError:
         msg = f'File not found: {path}'
-        
+        print(msg)
+
+####################### Main Code #############################
 #Read results files
 df_no_snow = read_results(year, file_name, path_no_snow)
 df_snow = read_results(year, file_name, path_snow)
@@ -61,7 +63,6 @@ date_range = [start_date, end_date]
 df_no_snow_filtered = df_no_snow[(df_no_snow['Local Datetime'] >= start_date) & (df_no_snow['Local Datetime'] <= end_date)]
 df_snow_filtered = df_snow[(df_snow['Local Datetime'] >= start_date) & (df_snow['Local Datetime'] <= end_date)]
 
-
 # Determine Mount Type
 site_data = pd.read_csv('Data/Site Data/2024_utility-scale_solar_data_update.csv')
 # Find the mounting type using .loc
@@ -69,7 +70,7 @@ mounting_type = site_data.loc[site_data['Project Name'] == site_name, 'Mount'].i
 state = site_data.loc[site_data['Project Name'] == site_name, 'State'].iloc[0]
 
 
-# Create a figure with two subplots stacked vertically
+####################### Create Figure #############################
 fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(6, 4), sharex=True)
 
 # Plot 1: DC Input Power and Weather File Snow Depth
@@ -104,14 +105,10 @@ ax2.tick_params(axis='y', labelsize=12, colors='black')
 # Add the legend
 ax2.legend(loc='upper right', fontsize=11)
 
-
+# Add title
 ax1.set_title(f'{site_name}\n{mounting_type} Array in {state}\nDC Input Power and Snow Depth Over Time', fontsize=14)
 
-# Add a vertical line to Plot 1
-#vline_datetime1 = pd.Timestamp('2022-01-22 14:30:00')
-#ax1.axvline(x=vline_datetime1, color='red', linestyle='--')
-
-# Grid
+# Add grid
 ax1.grid()
 
 # Plot 2: Plane of Array Irradiance and Ambient Temperature
@@ -122,7 +119,6 @@ ax3.plot(df_no_snow_filtered['Local Datetime'], df_no_snow_filtered['poa'],
 ax3.set_ylabel('Irradiance [W/m^2]', fontsize=14)
 ax3.legend(loc='upper left', fontsize=11)
 ax3.tick_params(axis='y', labelsize=14)
-
 ax3.set_ylim(0, 1000)
 
 # Secondary y-axis for Ambient Temperature
@@ -135,30 +131,14 @@ ax4.legend(loc='upper right', fontsize=11)
 
 ax4.set_ylim(-30, 10)
 
-# Add a vertical line to Plot 2
-#vline_datetime2 = pd.Timestamp('2022-01-22 14:30:00')
-#ax3.axvline(x=vline_datetime2, color='red', linestyle='--')
-
+# Add title
 ax3.set_title(f'{site_name}\n{mounting_type} Array in {state}\nPlane of Array Irradiance and Temperature Over Time', fontsize=14)
 
-# Grid
+# Add grid
 ax3.grid()
 
-# Set shared x-axis label
-#axes[-1].set_xlabel('Date', fontsize=14)
-
-# Format x-axis with dates
-# Create a date formatter
-date_formatter = mdates.DateFormatter('%-m/%-d/%y')
-
-# Apply the date formatter and locator to each axis
-# for ax in axes:
-#     ax.xaxis.set_major_locator(mdates.DayLocator())  # Set major ticks to daily intervals
-#     ax.xaxis.set_major_formatter(date_formatter)
-#     ax.tick_params(axis='x', rotation=45, labelsize=14)
-
+####################### Print and Save Plot #############################
 plt.tight_layout()
-
 # Save the figure
 fig.savefig(BASE_DIR / f'Figures/Snow Event Figure.pdf', format='pdf', bbox_inches='tight')
 plt.show()
