@@ -2,53 +2,67 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Nov 11 15:20:52 2024
-
 @author: shelbiedavis1
+This code plots the annual or seasonal DC energy yield for all sites. It
+also plots the tracking and fixed tilt systems separately.
+The axes need to be updated to adapt to the input data. Right now, the axes are
+configured for plotting all years 2013-2022.
 Updated on 8/20/25 to use portable file paths for GitHub sharing
 """
-# %% [1] Import Packages
+####################### Library Imports #############################
 import json
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 
-# %% [2] User-Defined Data
-# Enter Analysis Start and End Year
-start_year = 2022
-end_year = 2022
-title = 'Eastern Interconnect'
+####################### User Defined Constants #############################
+start_year = 2022 #first analysis year
+end_year = 2022 #last analysis year
+title = 'Eastern Interconnect Analysis.json'
 months = [12, 1, 2] #winter
 #months = [3,4,5] #spring
-#months = [1,2,3,4,5,6,7,8,9,10,11,12]
-timeframe = 'winter'
-lat_min = 0
+#months = [1,2,3,4,5,6,7,8,9,10,11,12] #all months
+timeframe = 'winter' #analysis type
+lat_min = 0 #can change if you want to look at only northern latitudes
 
 # === EDIT THIS PATH ===
 BASE_DIR = Path("/Volumes/Wickett SSD/Snow_Loss_Project")
 
-# %% [3] Data Processing
-
+####################### OTHER Constants #############################
 df = pd.DataFrame(columns=[])
-    
 
+# Initialize data structures for the bar chart
+categories = [
+    "Tracking Sites without Snow",
+    "Tracking Sites with Snow",
+    "Tracking Total Loss",
+    "Fixed Sites without Snow",
+    "Fixed Sites with Snow",
+    "Fixed Total Loss",
+    "All Sites without Snow",
+    "All Sites with Snow",
+    "Total Loss",
+]
+data = {category: [] for category in categories}
+    
 # Dictionary to store DataFrames for each year
 yearly_dfs = {}
+
+####################### Main Code #############################
 
 for year in range(start_year, end_year + 1):
     total_no_snow_dc_power_list = []
     total_snow_dc_power_list = []
     mount_type_list = []
 
-    file = f"{year} {title} Analysis"
     JSON_DIR = BASE_DIR / "Project json files"
-    file = f"{year} {title} Analysis.json"
+    file = f"{year} {title}"
     with open(JSON_DIR / file) as f:
         site_dict = json.load(f)
     
-
     for i, site_key in enumerate(site_dict):
-        
+        # exclude sites with no snow data
         if site_dict[site_key]['Project Name'] == 'FPL Space Coast Next Generation Solar Energy Center':
             continue  
         if site_dict[site_key]['Project Name'] == 'Monroe County Sites C  D  & E':
@@ -68,15 +82,11 @@ for year in range(start_year, end_year + 1):
         if site_dict[site_key]['Project Name'] == 'Live Oak Solar':
             continue
         
+        #limits latitude based on lat_min
         if site_dict[site_key]['Latitude']>= lat_min:
             site_data = site_dict[site_key]
-        
-      
         else:
             continue
-    
-        #site_data = site_dict[site_key]
-    
     
         # Load No Snow data using the UTC datetime index
         SAM_no_snow_file = str(BASE_DIR / f'PySAM_Results_UTC/Existing_Sites_Results_UTC/No_Snow/{year} SAM Results/{site_data["Project Name"]}_{year}_Results.csv')
@@ -88,7 +98,7 @@ for year in range(start_year, end_year + 1):
            )
         SAM_no_snow.index.name = 'UTC'
 
-        # Filter directly using the index (which is in UTC)
+        # Filter using the UTC index
         SAM_no_snow = SAM_no_snow[SAM_no_snow.index.month.isin(months)]
 
         # Aggregate DC input power
@@ -130,25 +140,7 @@ for year in range(start_year, end_year + 1):
     yearly_dfs[year] = df_year
 
 print(yearly_dfs)
-
-
-# Initialize data structures for the bar chart
 years = sorted(yearly_dfs.keys())
-categories = [
-    
-    
-    "Tracking Sites without Snow",
-    "Tracking Sites with Snow",
-    "Tracking Total Loss",
-    "Fixed Sites without Snow",
-    "Fixed Sites with Snow",
-    "Fixed Total Loss",
-    "All Sites without Snow",
-    "All Sites with Snow",
-    "Total Loss",
-]
-
-data = {category: [] for category in categories}
 
 # Aggregate data for each year and category
 for year in years:
@@ -182,9 +174,9 @@ for year in years:
     else:
         total_loss = 0
     print(f'Total Loss: {total_loss}')
-    
     print(tracking_loss)
-    print(fixed_loss)    
+    print(fixed_loss)
+
     # Populate data for the bar chart
     data["Tracking Sites with Snow"].append(tracking_snow/1000000000000)
     data["Tracking Sites without Snow"].append(tracking_no_snow/1000000000000)
@@ -196,199 +188,9 @@ for year in years:
     data["All Sites without Snow"].append(sum(no_snow)/1000000000000)
     data["Total Loss"].append(total_loss)
 
-# %% [4] Bar Chart (not stacked)
-# # Create the bar chart
-# x = np.arange(len(years))
+####################### Bar Chart (Stacked) Properties  #############################
 
-
-
-# # Define colors for each category
-# colors = {
-
-#     "Tracking Sites with Snow": "#66D0B9",
-#     "Tracking Sites without Snow": "#009E73",
-#     "Fixed Sites with Snow": "#A8DDF5",
-#     "Fixed Sites without Snow": "#56B4E9",
-#     "All Sites with Snow": "#FFCD66",
-#     "All Sites without Snow": "#E69F00"
-    
-# }
-
-# # Adjust bar positions and plot with colors
-# fig, ax = plt.subplots(figsize=(14, 6))
-
-# # Define a consistent spacing for bars
-# width = 0.15  # Width of the bars
-# spacing = 0.15  # Spacing between bars
-
-# # Adjusted offsets
-# all_offsets = [-2 * spacing, -spacing]
-# tracking_offsets = [0, spacing]
-# fixed_offsets = [2 * spacing, 3 * spacing]
-
-# # Plot bars
-# all_without_snow_bars = ax.bar(
-#     x + all_offsets[0], 
-#     data["All Sites without Snow"], 
-#     width, 
-#     label="All Sites without Snow", 
-#     color=colors["All Sites without Snow"], 
-#     alpha=1
-# )
-# all_with_snow_bars = ax.bar(
-#     x + all_offsets[1], 
-#     data["All Sites with Snow"], 
-#     width, 
-#     label="All Sites with Snow", 
-#     color=colors["All Sites with Snow"], 
-#     alpha=1, 
-#     hatch='\\'
-# )
-# tracking_without_snow_bars = ax.bar(
-#     x + tracking_offsets[0], 
-#     data["Tracking Sites without Snow"], 
-#     width, 
-#     label="Tracking Sites without Snow", 
-#     color=colors["Tracking Sites without Snow"]
-# )
-# tracking_with_snow_bars = ax.bar(
-#     x + tracking_offsets[1], 
-#     data["Tracking Sites with Snow"], 
-#     width, 
-#     label="Tracking Sites with Snow", 
-#     color=colors["Tracking Sites with Snow"], 
-#     hatch='\\'
-# )
-# fixed_without_snow_bars = ax.bar(
-#     x + fixed_offsets[0], 
-#     data["Fixed Sites without Snow"], 
-#     width, 
-#     label="Fixed Sites without Snow", 
-#     color=colors["Fixed Sites without Snow"]
-# )
-# fixed_with_snow_bars = ax.bar(
-#     x + fixed_offsets[1], 
-#     data["Fixed Sites with Snow"], 
-#     width, 
-#     label="Fixed Sites with Snow", 
-#     color=colors["Fixed Sites with Snow"], 
-#     hatch='\\'
-# )
-
-
-
-
-
-# # Add text above "Fixed Sites" bars for the loss
-# for i, (bar_without_snow, bar_with_snow) in enumerate(zip(fixed_without_snow_bars, fixed_with_snow_bars)):
-#     if data["Fixed Sites without Snow"][i] != 0:        
-#         loss = data["Fixed Total Loss"][i]
-#         x_position = bar_without_snow.get_x() + bar_without_snow.get_width() / 1
-#         y_position = bar_without_snow.get_height() +.5  # annual
-#         #y_position = bar_without_snow.get_height() +.05  # winter
-#         #y_position = bar_without_snow.get_height() +.005  # 40 lat
-#         ax.text(x_position, y_position, f'{loss:.1f}%', ha='center', va='bottom', fontsize=9, color='black')
-    
-#         # # Draw Brackets
-#         # x_center = x[i] + fixed_offsets[1] # Centered over the blue bar
-#         # bracket_bottom = bar_with_snow.get_height()  # Bottom of the bracket starts at the blue bar height
-#         # bracket_top = bar_without_snow.get_height()  # Top of the bracket ends at the orange bar height
-#         # mid_bracket = (bracket_bottom + bracket_top) / 2  # Midpoint for the text label
-#         # total_loss = bracket_top-bracket_bottom
-#         # total_percent_loss = (bracket_top-bracket_bottom)/bracket_top*100
-        
-
-#         # # Draw the vertical bracket
-#         # ax.plot([x_center, x_center], [bracket_bottom, bracket_top], color='black', lw=1.5)
-#         # ax.plot([x_center - 0.05, x_center + 0.05], [bracket_top, bracket_top], color='black', lw=1.5)
-#         # ax.plot([x_center - 0.05, x_center + 0.05], [bracket_bottom, bracket_bottom], color='black', lw=1.5)
-#     else:
-#         continue
-    
-# # Add text above "Tracking Sites" bars for the loss
-# for i, (bar_without_snow, bar_with_snow) in enumerate(zip(tracking_without_snow_bars, tracking_with_snow_bars)):
-#     if data["Tracking Sites without Snow"][i] != 0:
-#         loss = data["Tracking Total Loss"][i]
-#         x_position = bar_without_snow.get_x() + bar_without_snow.get_width() / 1
-#         y_position = bar_without_snow.get_height() +.5  # annual
-#         #y_position = bar_without_snow.get_height() +.05  # winter
-#         #y_position = bar_without_snow.get_height() +.005  # 40 lat
-#         ax.text(x_position, y_position, f'{loss:.1f}%', ha='center', va='bottom', fontsize=9, color='black')
-        
-#         # # Draw Brackets
-#         # x_center = x[i] + tracking_offsets[1] # Centered over the blue bar
-#         # bracket_bottom = bar_with_snow.get_height()  # Bottom of the bracket starts at the blue bar height
-#         # bracket_top = bar_without_snow.get_height()  # Top of the bracket ends at the orange bar height
-#         # mid_bracket = (bracket_bottom + bracket_top) / 2  # Midpoint for the text label
-#         # total_loss = bracket_top-bracket_bottom
-#         # total_percent_loss = (bracket_top-bracket_bottom)/bracket_top*100
-        
-
-#         # # Draw the vertical bracket
-#         # ax.plot([x_center, x_center], [bracket_bottom, bracket_top], color='black', lw=1.5)
-#         # ax.plot([x_center - 0.05, x_center + 0.05], [bracket_top, bracket_top], color='black', lw=1.5)
-#         # ax.plot([x_center - 0.05, x_center + 0.05], [bracket_bottom, bracket_bottom], color='black', lw=1.5)
-#     else:
-#         continue
-
-# # Add text above "All Sites" bars for the loss
-# for i, (bar_without_snow, bar_with_snow) in enumerate(zip(all_without_snow_bars, all_with_snow_bars)):
-#     if data["All Sites without Snow"][i] != 0:
-#         loss = data["Total Loss"][i]
-#         x_position = bar_without_snow.get_x() + bar_without_snow.get_width() / 1
-#         y_position = bar_without_snow.get_height() +.5  # annual
-#         #y_position = bar_without_snow.get_height() +.05  # winter
-#         #y_position = bar_without_snow.get_height() +.005  # 40 lat
-#         ax.text(x_position, y_position, f'{loss:.1f}%', ha='center', va='bottom', fontsize=9, color='black')
-        
-#         # # Draw Brackets
-#         # x_center = x[i] + all_offsets[1] # Centered over the blue bar
-#         # bracket_bottom = bar_with_snow.get_height()  # Bottom of the bracket starts at the blue bar height
-#         # bracket_top = bar_without_snow.get_height()  # Top of the bracket ends at the orange bar height
-#         # mid_bracket = (bracket_bottom + bracket_top) / 2  # Midpoint for the text label
-#         # total_loss = bracket_top-bracket_bottom
-#         # total_percent_loss = (bracket_top-bracket_bottom)/bracket_top*100
-        
-
-#         # # Draw the vertical bracket
-#         # ax.plot([x_center, x_center], [bracket_bottom, bracket_top], color='black', lw=1.5)
-#         # ax.plot([x_center - 0.05, x_center + 0.05], [bracket_top, bracket_top], color='black', lw=1.5)
-#         # ax.plot([x_center - 0.05, x_center + 0.05], [bracket_bottom, bracket_bottom], color='black', lw=1.5)
-    
-#     else:
-#         continue
-
-
-
-# # Formatting the chart
-# ax.set_xlabel('Year', fontsize = 14)
-# ax.set_ylabel('DC Energy [TWh]', fontsize = 14)
-# #ax.set_title('DC Energy Generation of Existing Sites\nAbove 40 Degrees Latitude\nDecember, January, and February', fontsize = 20)
-# ax.set_xticks(x)
-# ax.set_xticklabels(years, fontsize = 14)
-# # Assuming you have an Axes object named ax
-# ax.tick_params(axis='y', labelsize=12)
-# # Set x-axis limits to match the range of years
-# plt.xlim(-.5, 9.6)
-# plt.ylim(0,60) #annual
-# #plt.ylim(0,12) #winter
-# #plt.ylim(0,1.4) #40 lat
-# ax.legend(fontsize = 14)
-# plt.xticks(rotation=45)
-# ax.yaxis.grid(True, linestyle='-', linewidth=0.5, alpha=0.5, zorder=0)
-# ax.set_axisbelow(True)  # Ensures grid lines are behind bars
-
-# plt.tight_layout()
-# # Save the figure
-# fig.savefig(f"Figures/existing_site_{timeframe}_energy_generation_above_{lat_min}_not_stacked.png", dpi=300, bbox_inches="tight")
-# plt.show()
-
-# %% [5] Bar Chart (stacked)
-# Create the bar chart
 x = np.arange(len(years))
-
-
-
 # Define colors for each category
 colors = {
 
@@ -398,11 +200,7 @@ colors = {
     "Fixed Sites without Snow": "#56B4E9",
     "All Sites with Snow": "#FFCD66",
     "All Sites without Snow": "#E69F00"
-    
 }
-
-# Adjust bar positions and plot with colors
-fig, ax = plt.subplots(figsize=(14, 6))
 
 # Define a consistent spacing for bars
 width = 0.15  # Width of the bars
@@ -412,10 +210,11 @@ spacing = 0.15  # Spacing between bars
 all_offsets = [-1.5 * spacing, -.5*spacing]
 other_offsets = [.5 * spacing, 1.5 * spacing]
 
+# Adjust bar positions and plot with colors
+fig, ax = plt.subplots(figsize=(14, 6))
 
+####################### Create Chart (Stacked) #############################
 
-
-# Plot bars
 all_without_snow_bars = ax.bar(
     x + all_offsets[0], 
     data["All Sites without Snow"], 
@@ -471,10 +270,6 @@ fixed_with_snow_bars = ax.bar(
     bottom = data['Tracking Sites with Snow'],
     zorder=1
 )
-
-
-
-
 
 # Add text above "Fixed Sites" bars for the loss
 for i, (bar_without_snow, bar_with_snow) in enumerate(zip(fixed_without_snow_bars, fixed_with_snow_bars)):
@@ -534,8 +329,6 @@ for i, (bar_without_snow, bar_with_snow) in enumerate(zip(all_without_snow_bars,
     ax.plot([x_center - 0.05, x_center + 0.05], [bracket_bottom, bracket_bottom], color='black', lw=1.5)
 
 
-
-
 # Formatting the chart
 ax.set_xlabel('Year', fontsize = 18)
 ax.set_ylabel('DC Energy [TWh]', fontsize = 18)
@@ -555,148 +348,334 @@ plt.xticks(rotation=45)
 ax.yaxis.grid(True, linestyle='-', linewidth=0.5, alpha=0.5, zorder=0)
 ax.set_axisbelow(True)  # Ensures grid lines are behind bars
 
+####################### Print and Save Plot #############################
 fig_dir= BASE_DIR / 'Figures'
 folder = fig_dir.parent
 folder.mkdir(parents=True, exist_ok=True)
 
 plt.tight_layout()
 # Save the figure
-#fig.savefig(f"/volumes/wickett SSD/existing_site_{timeframe}_energy_generation_above_{lat_min}_stacked.png", dpi=300, bbox_inches="tight")
-#fig.savefig("Figures/test.pdf", format='pdf', bbox_inches="tight")
 fig.savefig(BASE_DIR / f'Figures/Yearly or Seasonal Figure.pdf', format='pdf', bbox_inches='tight')
 plt.show()
 
 
+""" 
+# Bar Chart (not stacked)
+# Create the bar chart
+x = np.arange(len(years))
 
 
 
-# %% [6] Bar Chart (not stacked) Different Labels
-# # Create the bar chart
-# x = np.arange(len(years))
+# Define colors for each category
+colors = {
 
-
-
-# # Define colors for each category
-# colors = {
-
-#     "Tracking Sites with Snow": "#66D0B9",
-#     "Tracking Sites without Snow": "#009E73",
-#     "Fixed Sites with Snow": "#A8DDF5",
-#     "Fixed Sites without Snow": "#56B4E9",
-#     "All Sites with Snow": "#FFCD66",
-#     "All Sites without Snow": "#E69F00"
+    "Tracking Sites with Snow": "#66D0B9",
+    "Tracking Sites without Snow": "#009E73",
+    "Fixed Sites with Snow": "#A8DDF5",
+    "Fixed Sites without Snow": "#56B4E9",
+    "All Sites with Snow": "#FFCD66",
+    "All Sites without Snow": "#E69F00"
     
-# }
+}
 
-# # Adjust bar positions and plot with colors
-# fig, ax = plt.subplots(figsize=(14, 6))
+# Adjust bar positions and plot with colors
+fig, ax = plt.subplots(figsize=(14, 6))
 
-# # Define a consistent spacing for bars
-# width = 0.15  # Width of the bars
-# spacing = 0.15  # Spacing between bars
+# Define a consistent spacing for bars
+width = 0.15  # Width of the bars
+spacing = 0.15  # Spacing between bars
 
-# # Adjusted offsets
-# all_offsets = [-2 * spacing, -spacing]
-# tracking_offsets = [0, spacing]
-# fixed_offsets = [2 * spacing, 3 * spacing]
+# Adjusted offsets
+all_offsets = [-2 * spacing, -spacing]
+tracking_offsets = [0, spacing]
+fixed_offsets = [2 * spacing, 3 * spacing]
 
-# # Plot bars
-# all_without_snow_bars = ax.bar(
-#     x + all_offsets[0], 
-#     data["All Sites without Snow"], 
-#     width, 
-#     label="All Sites without Snow", 
-#     color=colors["All Sites without Snow"], 
-#     alpha=1
-# )
-# all_with_snow_bars = ax.bar(
-#     x + all_offsets[1], 
-#     data["All Sites with Snow"], 
-#     width, 
-#     label="All Sites with Snow", 
-#     color=colors["All Sites with Snow"], 
-#     alpha=1, 
-#     hatch='\\'
-# )
-# tracking_without_snow_bars = ax.bar(
-#     x + tracking_offsets[0], 
-#     data["Tracking Sites without Snow"], 
-#     width, 
-#     label="Tracking Sites without Snow", 
-#     color=colors["Tracking Sites without Snow"]
-# )
-# tracking_with_snow_bars = ax.bar(
-#     x + tracking_offsets[1], 
-#     data["Tracking Sites with Snow"], 
-#     width, 
-#     label="Tracking Sites with Snow", 
-#     color=colors["Tracking Sites with Snow"], 
-#     hatch='\\'
-# )
-# fixed_without_snow_bars = ax.bar(
-#     x + fixed_offsets[0], 
-#     data["Fixed Sites without Snow"], 
-#     width, 
-#     label="Fixed Sites without Snow", 
-#     color=colors["Fixed Sites without Snow"]
-# )
-# fixed_with_snow_bars = ax.bar(
-#     x + fixed_offsets[1], 
-#     data["Fixed Sites with Snow"], 
-#     width, 
-#     label="Fixed Sites with Snow", 
-#     color=colors["Fixed Sites with Snow"], 
-#     hatch='\\'
-# )
-
-
+# Plot bars
+all_without_snow_bars = ax.bar(
+    x + all_offsets[0], 
+    data["All Sites without Snow"], 
+    width, 
+    label="All Sites without Snow", 
+    color=colors["All Sites without Snow"], 
+    alpha=1
+)
+all_with_snow_bars = ax.bar(
+    x + all_offsets[1], 
+    data["All Sites with Snow"], 
+    width, 
+    label="All Sites with Snow", 
+    color=colors["All Sites with Snow"], 
+    alpha=1, 
+    hatch='\\'
+)
+tracking_without_snow_bars = ax.bar(
+    x + tracking_offsets[0], 
+    data["Tracking Sites without Snow"], 
+    width, 
+    label="Tracking Sites without Snow", 
+    color=colors["Tracking Sites without Snow"]
+)
+tracking_with_snow_bars = ax.bar(
+    x + tracking_offsets[1], 
+    data["Tracking Sites with Snow"], 
+    width, 
+    label="Tracking Sites with Snow", 
+    color=colors["Tracking Sites with Snow"], 
+    hatch='\\'
+)
+fixed_without_snow_bars = ax.bar(
+    x + fixed_offsets[0], 
+    data["Fixed Sites without Snow"], 
+    width, 
+    label="Fixed Sites without Snow", 
+    color=colors["Fixed Sites without Snow"]
+)
+fixed_with_snow_bars = ax.bar(
+    x + fixed_offsets[1], 
+    data["Fixed Sites with Snow"], 
+    width, 
+    label="Fixed Sites with Snow", 
+    color=colors["Fixed Sites with Snow"], 
+    hatch='\\'
+)
 
 
 
-# # Add text above "Fixed Sites" bars for the loss
-# for i, (bar_without_snow, bar_with_snow) in enumerate(zip(fixed_without_snow_bars, fixed_with_snow_bars)):
-#     if data["Fixed Sites without Snow"][i] != 0:        
-#         loss = data["Fixed Total Loss"][i]
-#         x_position = bar_without_snow.get_x() + bar_without_snow.get_width() / 1
-#         y_position = bar_without_snow.get_height() +.5  # Place text 10 units above the bar
-#         ax.text(x_position, y_position, f'{loss:.1f}%', ha='center', va='bottom', fontsize=10, color='black')
-#     else:
-#         continue
+
+
+# Add text above "Fixed Sites" bars for the loss
+for i, (bar_without_snow, bar_with_snow) in enumerate(zip(fixed_without_snow_bars, fixed_with_snow_bars)):
+    if data["Fixed Sites without Snow"][i] != 0:        
+        loss = data["Fixed Total Loss"][i]
+        x_position = bar_without_snow.get_x() + bar_without_snow.get_width() / 1
+        y_position = bar_without_snow.get_height() +.5  # annual
+        #y_position = bar_without_snow.get_height() +.05  # winter
+        #y_position = bar_without_snow.get_height() +.005  # 40 lat
+        ax.text(x_position, y_position, f'{loss:.1f}%', ha='center', va='bottom', fontsize=9, color='black')
     
-# # Add text above "Tracking Sites" bars for the loss
-# for i, (bar_without_snow, bar_with_snow) in enumerate(zip(tracking_without_snow_bars, tracking_with_snow_bars)):
-#     if data["Tracking Sites without Snow"][i] != 0:
-#         loss = data["Tracking Total Loss"][i]
-#         x_position = bar_without_snow.get_x() + bar_without_snow.get_width() / 1
-#         y_position = bar_without_snow.get_height() +.5  # Place text 10 units above the bar
-#         ax.text(x_position, y_position, f'{loss:.1f}%', ha='center', va='bottom', fontsize=10, color='black')
-#     else:
-#         continue
+        # # Draw Brackets
+        # x_center = x[i] + fixed_offsets[1] # Centered over the blue bar
+        # bracket_bottom = bar_with_snow.get_height()  # Bottom of the bracket starts at the blue bar height
+        # bracket_top = bar_without_snow.get_height()  # Top of the bracket ends at the orange bar height
+        # mid_bracket = (bracket_bottom + bracket_top) / 2  # Midpoint for the text label
+        # total_loss = bracket_top-bracket_bottom
+        # total_percent_loss = (bracket_top-bracket_bottom)/bracket_top*100
+        
 
-# # Add text above "All Sites" bars for the loss
-# for i, (bar_without_snow, bar_with_snow) in enumerate(zip(all_without_snow_bars, all_with_snow_bars)):
-#     if data["All Sites without Snow"][i] != 0:
-#         loss = data["Total Loss"][i]
-#         x_position = bar_without_snow.get_x() + bar_without_snow.get_width() / 1
-#         y_position = bar_without_snow.get_height() +.5  # Place text 10 units above the bar
-#         ax.text(x_position, y_position, f'{loss:.1f}%', ha='center', va='bottom', fontsize=10, color='black')
-#     else:
-#         continue
+        # # Draw the vertical bracket
+        # ax.plot([x_center, x_center], [bracket_bottom, bracket_top], color='black', lw=1.5)
+        # ax.plot([x_center - 0.05, x_center + 0.05], [bracket_top, bracket_top], color='black', lw=1.5)
+        # ax.plot([x_center - 0.05, x_center + 0.05], [bracket_bottom, bracket_bottom], color='black', lw=1.5)
+    else:
+        continue
+    
+# Add text above "Tracking Sites" bars for the loss
+for i, (bar_without_snow, bar_with_snow) in enumerate(zip(tracking_without_snow_bars, tracking_with_snow_bars)):
+    if data["Tracking Sites without Snow"][i] != 0:
+        loss = data["Tracking Total Loss"][i]
+        x_position = bar_without_snow.get_x() + bar_without_snow.get_width() / 1
+        y_position = bar_without_snow.get_height() +.5  # annual
+        #y_position = bar_without_snow.get_height() +.05  # winter
+        #y_position = bar_without_snow.get_height() +.005  # 40 lat
+        ax.text(x_position, y_position, f'{loss:.1f}%', ha='center', va='bottom', fontsize=9, color='black')
+        
+        # # Draw Brackets
+        # x_center = x[i] + tracking_offsets[1] # Centered over the blue bar
+        # bracket_bottom = bar_with_snow.get_height()  # Bottom of the bracket starts at the blue bar height
+        # bracket_top = bar_without_snow.get_height()  # Top of the bracket ends at the orange bar height
+        # mid_bracket = (bracket_bottom + bracket_top) / 2  # Midpoint for the text label
+        # total_loss = bracket_top-bracket_bottom
+        # total_percent_loss = (bracket_top-bracket_bottom)/bracket_top*100
+        
 
-# # Formatting the chart
-# ax.set_xlabel('Year', fontsize = 14)
-# ax.set_ylabel('DC Energy [GWh]', fontsize = 14)
-# ax.set_title('DC Energy Generation of Existing Sites\nAbove 40 Degrees Latitude\nDecember, January, and February', fontsize = 20)
-# ax.set_xticks(x)
-# ax.set_xticklabels(years, fontsize = 14)
-# # Assuming you have an Axes object named ax
-# ax.tick_params(axis='y', labelsize=12)
-# # Set x-axis limits to match the range of years
-# plt.xlim(-.5, 9.6)
-# ax.legend(fontsize = 14)
-# plt.xticks(rotation=45)
+        # # Draw the vertical bracket
+        # ax.plot([x_center, x_center], [bracket_bottom, bracket_top], color='black', lw=1.5)
+        # ax.plot([x_center - 0.05, x_center + 0.05], [bracket_top, bracket_top], color='black', lw=1.5)
+        # ax.plot([x_center - 0.05, x_center + 0.05], [bracket_bottom, bracket_bottom], color='black', lw=1.5)
+    else:
+        continue
 
-# plt.tight_layout()
-# # Save the figure
-# #fig.savefig("Figures/existing_site_winter_energy_generation_above_40lat.png", dpi=300, bbox_inches="tight")
-# plt.show()
+# Add text above "All Sites" bars for the loss
+for i, (bar_without_snow, bar_with_snow) in enumerate(zip(all_without_snow_bars, all_with_snow_bars)):
+    if data["All Sites without Snow"][i] != 0:
+        loss = data["Total Loss"][i]
+        x_position = bar_without_snow.get_x() + bar_without_snow.get_width() / 1
+        y_position = bar_without_snow.get_height() +.5  # annual
+        #y_position = bar_without_snow.get_height() +.05  # winter
+        #y_position = bar_without_snow.get_height() +.005  # 40 lat
+        ax.text(x_position, y_position, f'{loss:.1f}%', ha='center', va='bottom', fontsize=9, color='black')
+        
+        # # Draw Brackets
+        # x_center = x[i] + all_offsets[1] # Centered over the blue bar
+        # bracket_bottom = bar_with_snow.get_height()  # Bottom of the bracket starts at the blue bar height
+        # bracket_top = bar_without_snow.get_height()  # Top of the bracket ends at the orange bar height
+        # mid_bracket = (bracket_bottom + bracket_top) / 2  # Midpoint for the text label
+        # total_loss = bracket_top-bracket_bottom
+        # total_percent_loss = (bracket_top-bracket_bottom)/bracket_top*100
+        
+
+        # # Draw the vertical bracket
+        # ax.plot([x_center, x_center], [bracket_bottom, bracket_top], color='black', lw=1.5)
+        # ax.plot([x_center - 0.05, x_center + 0.05], [bracket_top, bracket_top], color='black', lw=1.5)
+        # ax.plot([x_center - 0.05, x_center + 0.05], [bracket_bottom, bracket_bottom], color='black', lw=1.5)
+    
+    else:
+        continue
+
+
+
+# Formatting the chart
+ax.set_xlabel('Year', fontsize = 14)
+ax.set_ylabel('DC Energy [TWh]', fontsize = 14)
+#ax.set_title('DC Energy Generation of Existing Sites\nAbove 40 Degrees Latitude\nDecember, January, and February', fontsize = 20)
+ax.set_xticks(x)
+ax.set_xticklabels(years, fontsize = 14)
+# Assuming you have an Axes object named ax
+ax.tick_params(axis='y', labelsize=12)
+# Set x-axis limits to match the range of years
+plt.xlim(-.5, 9.6)
+plt.ylim(0,60) #annual
+#plt.ylim(0,12) #winter
+#plt.ylim(0,1.4) #40 lat
+ax.legend(fontsize = 14)
+plt.xticks(rotation=45)
+ax.yaxis.grid(True, linestyle='-', linewidth=0.5, alpha=0.5, zorder=0)
+ax.set_axisbelow(True)  # Ensures grid lines are behind bars
+
+plt.tight_layout()
+# Save the figure
+fig.savefig(f"Figures/existing_site_{timeframe}_energy_generation_above_{lat_min}_not_stacked.png", dpi=300, bbox_inches="tight")
+plt.show()
+
+
+%% [6] Bar Chart (not stacked) Different Labels
+# Create the bar chart
+x = np.arange(len(years))
+
+
+
+# Define colors for each category
+colors = {
+
+    "Tracking Sites with Snow": "#66D0B9",
+    "Tracking Sites without Snow": "#009E73",
+    "Fixed Sites with Snow": "#A8DDF5",
+    "Fixed Sites without Snow": "#56B4E9",
+    "All Sites with Snow": "#FFCD66",
+    "All Sites without Snow": "#E69F00"
+    
+}
+
+# Adjust bar positions and plot with colors
+fig, ax = plt.subplots(figsize=(14, 6))
+
+# Define a consistent spacing for bars
+width = 0.15  # Width of the bars
+spacing = 0.15  # Spacing between bars
+
+# Adjusted offsets
+all_offsets = [-2 * spacing, -spacing]
+tracking_offsets = [0, spacing]
+fixed_offsets = [2 * spacing, 3 * spacing]
+
+# Plot bars
+all_without_snow_bars = ax.bar(
+    x + all_offsets[0], 
+    data["All Sites without Snow"], 
+    width, 
+    label="All Sites without Snow", 
+    color=colors["All Sites without Snow"], 
+    alpha=1
+)
+all_with_snow_bars = ax.bar(
+    x + all_offsets[1], 
+    data["All Sites with Snow"], 
+    width, 
+    label="All Sites with Snow", 
+    color=colors["All Sites with Snow"], 
+    alpha=1, 
+    hatch='\\'
+)
+tracking_without_snow_bars = ax.bar(
+    x + tracking_offsets[0], 
+    data["Tracking Sites without Snow"], 
+    width, 
+    label="Tracking Sites without Snow", 
+    color=colors["Tracking Sites without Snow"]
+)
+tracking_with_snow_bars = ax.bar(
+    x + tracking_offsets[1], 
+    data["Tracking Sites with Snow"], 
+    width, 
+    label="Tracking Sites with Snow", 
+    color=colors["Tracking Sites with Snow"], 
+    hatch='\\'
+)
+fixed_without_snow_bars = ax.bar(
+    x + fixed_offsets[0], 
+    data["Fixed Sites without Snow"], 
+    width, 
+    label="Fixed Sites without Snow", 
+    color=colors["Fixed Sites without Snow"]
+)
+fixed_with_snow_bars = ax.bar(
+    x + fixed_offsets[1], 
+    data["Fixed Sites with Snow"], 
+    width, 
+    label="Fixed Sites with Snow", 
+    color=colors["Fixed Sites with Snow"], 
+    hatch='\\'
+)
+
+
+
+
+
+# Add text above "Fixed Sites" bars for the loss
+for i, (bar_without_snow, bar_with_snow) in enumerate(zip(fixed_without_snow_bars, fixed_with_snow_bars)):
+    if data["Fixed Sites without Snow"][i] != 0:        
+        loss = data["Fixed Total Loss"][i]
+        x_position = bar_without_snow.get_x() + bar_without_snow.get_width() / 1
+        y_position = bar_without_snow.get_height() +.5  # Place text 10 units above the bar
+        ax.text(x_position, y_position, f'{loss:.1f}%', ha='center', va='bottom', fontsize=10, color='black')
+    else:
+        continue
+    
+# Add text above "Tracking Sites" bars for the loss
+for i, (bar_without_snow, bar_with_snow) in enumerate(zip(tracking_without_snow_bars, tracking_with_snow_bars)):
+    if data["Tracking Sites without Snow"][i] != 0:
+        loss = data["Tracking Total Loss"][i]
+        x_position = bar_without_snow.get_x() + bar_without_snow.get_width() / 1
+        y_position = bar_without_snow.get_height() +.5  # Place text 10 units above the bar
+        ax.text(x_position, y_position, f'{loss:.1f}%', ha='center', va='bottom', fontsize=10, color='black')
+    else:
+        continue
+
+# Add text above "All Sites" bars for the loss
+for i, (bar_without_snow, bar_with_snow) in enumerate(zip(all_without_snow_bars, all_with_snow_bars)):
+    if data["All Sites without Snow"][i] != 0:
+        loss = data["Total Loss"][i]
+        x_position = bar_without_snow.get_x() + bar_without_snow.get_width() / 1
+        y_position = bar_without_snow.get_height() +.5  # Place text 10 units above the bar
+        ax.text(x_position, y_position, f'{loss:.1f}%', ha='center', va='bottom', fontsize=10, color='black')
+    else:
+        continue
+
+# Formatting the chart
+ax.set_xlabel('Year', fontsize = 14)
+ax.set_ylabel('DC Energy [GWh]', fontsize = 14)
+ax.set_title('DC Energy Generation of Existing Sites\nAbove 40 Degrees Latitude\nDecember, January, and February', fontsize = 20)
+ax.set_xticks(x)
+ax.set_xticklabels(years, fontsize = 14)
+# Assuming you have an Axes object named ax
+ax.tick_params(axis='y', labelsize=12)
+# Set x-axis limits to match the range of years
+plt.xlim(-.5, 9.6)
+ax.legend(fontsize = 14)
+plt.xticks(rotation=45)
+
+plt.tight_layout()
+# Save the figure
+#fig.savefig("Figures/existing_site_winter_energy_generation_above_40lat.png", dpi=300, bbox_inches="tight")
+plt.show() 
+"""
