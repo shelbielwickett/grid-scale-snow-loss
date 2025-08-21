@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+
 """
 Created on Tue Nov 19 22:09:55 2024
+This script downloads NSRDB data for the PV sites via API and saves them as .parquet
+files.  
 Updated on 4/30/25 to include extra day at beginning and end of year for UTC alignment
 Updated on 7/24/25 to use portable file paths for GitHub sharing
 @author: shelbielwickett
 """
-
+####################### Library Imports #############################
 import pvlib
 import pandas as pd
 import asyncio
@@ -17,19 +19,21 @@ import aiohttp
 import nest_asyncio
 from pathlib import Path
 
-####################### Configuration #############################
+####################### User Defined Constants #############################
 
-# === EDIT THIS PATH ONLY ===
+# === CHOOSE BASE DIRECTORY ===
 BASE_DIR = Path("/Volumes/Wickett SSD/Snow_Loss_Project")  # Set this to your external drive or data folder
 
 # === EDIT YEAR ===
-YEAR = 2022
+YEAR = 2020
 
 # === ENTER EMAIL ===
 email = "shelbied@mtu.edu"
 
 # === ENTER NREL API ===
 api = 'MMnlHTRA1FIWpFCH5JJAlLUFK16QmhzGiPQICAem'
+
+####################### OTHER Constants #############################
 
 # Define all file/folder paths relative to BASE_DIR
 SITE_DATA_FILE = Path("Data/Site Data/2024_utility-scale_solar_data_update.csv")
@@ -44,7 +48,7 @@ def write_to_log(message):
     with open(LOG_FILE, "a") as log:
         log.write(f"{message}\n")
 
-# load_site_data function loads and preprocesses existing site data. 
+# Loads and preprocesses existing site data. 
 # Preprocessing includes filtering for NERC subregions that are in the Eastern Interconnect
 def load_site_data(file_path, year):
     try:
@@ -166,7 +170,7 @@ nest_asyncio.apply()
 # Track the execution time
 start_time = time.time()
 
-# loads LBNL existing utility solar site data that has been filtered to only include pv sites
+# Load LBNL existing utility solar site data that has been filtered to only include pv sites
 unfiltered_site_df = load_site_data(SITE_DATA_FILE, YEAR)
 
 # Create site dictionary
@@ -175,7 +179,7 @@ site_dict = create_site_dictionary(unfiltered_site_df)
 # Run the async main function
 run_async_main()
 
+# Print execution time and the unfitered site dataframe
 end_time = time.time()
 print(f"Execution time: {end_time - start_time:.2f} seconds")
-
 print(unfiltered_site_df)
