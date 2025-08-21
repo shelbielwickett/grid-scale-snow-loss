@@ -6,7 +6,7 @@ The axes need to be updated to adapt to the input data. Right now, the axes are
 configured for plotting all years 2013-2022.
 Updated on 8/19/25 to use portable file paths for GitHub sharing
 """
-
+####################### Library Imports #############################
 import pandas as pd
 import json
 import matplotlib.pyplot as plt
@@ -14,22 +14,27 @@ import numpy as np
 import os
 from pathlib import Path
 
-# Parameters
-start_year = 2022
-end_year = 2022
-title = 'Eastern Interconnect'
+####################### User Defined Constants #############################
+start_year = 2021 #first analysis year
+end_year = 2022 #last analysis year
+title = 'Eastern Interconnect Analysis.json'
 #months = [12, 1, 2]  # Winter months
-months = [1,2,3,4,5,6,7,8,9,10,11,12]
-yearly_summary = []  # To store yearly summary results
+months = [1,2,3,4,5,6,7,8,9,10,11,12] #All months
 
-# === EDIT THIS PATH ===
+
+# === CHOOSE BASE DIRECTORY ===
 BASE_DIR = Path("/Volumes/Wickett SSD/Snow_Loss_Project")
 
+####################### OTHER Constants #############################
+
+yearly_summary = []  # To store yearly summary results
+
+####################### Main Code #############################
 
 # Iterate through each year
 for year in range(start_year, end_year + 1):
     JSON_DIR = BASE_DIR / "Project json files"
-    file = f"{year} {title} Analysis.json"
+    file = f"{year} {title}"
     with open(JSON_DIR / file) as f:
         site_dict = json.load(f)
 
@@ -40,6 +45,7 @@ for year in range(start_year, end_year + 1):
     for i, site_key in enumerate(site_dict):
         print(f"{i} and {site_key}")
         
+        # exclude sites with no snow data
         if site_dict[site_key]['Project Name'] == 'FPL Space Coast Next Generation Solar Energy Center':
             continue  
         if site_dict[site_key]['Project Name'] == 'Monroe County Sites C  D  & E':
@@ -164,7 +170,8 @@ tracking_gen_snow = summary_df['Total Tracking Power Generation at Max Loss with
 fixed_tilt_losses = summary_df['Total Fixed Tilt Loss at Max']/1000000000  # Total fixed tilt losses at max
 fixed_gen = summary_df['Total Fixed Tilt Power Generation at Max Loss [W]']/1000000000
 fixed_gen_snow = summary_df['Total Fixed Tilt Power Generation at Max Loss with snow [W]']/1000000000
-# %%
+
+####################### Plot Properties #############################
 years = range(start_year, end_year + 1)
 # Bar positions
 x = np.arange(len(years))
@@ -174,7 +181,8 @@ width = 0.15
 # Offset for each bar group
 offsets = [-2.5*width, -1.5 * width, -0.5 * width, 0.5 * width, 1.5 * width, 2.5 * width]
 
-# Create the bar plot with updated date formatting
+####################### Create Plot #############################
+# Create the bar plot
 fig1, ax = plt.subplots(figsize=(14, 6))
 bars_total = ax.bar(x + offsets[0], total_gen, width, label='Total Power', color='#E69F00')
 bars_total_snow = ax.bar(x + offsets[1], total_gen_snow, width, label = 'Total Power w/ Snow Cover', color = '#FFCD66', hatch='\\')
@@ -183,7 +191,6 @@ bars_tracking_snow = ax.bar(x + offsets[3], tracking_gen_snow, width, label = 'T
 bars_fixed = ax.bar(x + offsets[4], fixed_gen, width, label='Fixed Tilt Power', color='#56B4E9')
 bars_fixed_snow = ax.bar(x + offsets[5], fixed_gen_snow,width, label = 'Fixed Tilt Power w/ Snow Cover', color = '#A8DDF5', hatch='\\' )
 
-# %%
 # Customize the plot
 ax.set_xlabel('Year', fontsize = 14)
 ax.set_ylabel('DC Power Output [GW]', fontsize=14)
@@ -195,7 +202,6 @@ ax.legend(fontsize = 12)
 plt.xticks(rotation=45)
 ax.yaxis.grid(True, linestyle='-', linewidth=0.5, alpha=0.5, zorder = 0)
 ax.set_axisbelow(True)  # Ensures grid lines are behind bars
-
 ax.set_ylim(0, 22.5)  # Adjust y-axis limits for visibility
 
 # Add vertical brackets to label differences, centered over the blue bars
@@ -215,32 +221,32 @@ for i, (bar_without_snow, bar_with_snow) in enumerate(zip(bars_total, bars_total
     ax.plot([x_center - 0.05, x_center + 0.05], [bracket_bottom, bracket_bottom], color='black', lw=1.5)
 
     # Annotate the difference
-    
     ax.text(x_center, bracket_top+.1, f'Max Loss\nHour:\n{formatted_date} {formatted_time}\nTotal Loss:\n{total_loss:.1f} GW\n({total_percent_loss:.1f}%)', ha='center', va='bottom', fontsize=10, color='black')
 
+####################### Print and Save Plot #############################
 fig_dir= BASE_DIR / 'Figures'
 folder = fig_dir.parent
 folder.mkdir(parents=True, exist_ok=True)
+
 # Show the plot
 plt.tight_layout()
 fig1.savefig(BASE_DIR / 'Figures/Max Loss Hour Figure 1.pdf', format='pdf', bbox_inches='tight')
 #plt.show()
 
-# %% Stacked plot
-
+####################### Stacked Plot Properties #############################
 years = range(start_year, end_year + 1)
+
 # Bar positions
 x = np.arange(len(years))
 print(x)
 width = 0.15
-
 spacing = 0.15  # Spacing between bars
 
 # Adjusted offsets
 all_offsets = [-1.5 * spacing, -.5*spacing]
 other_offsets = [.5 * spacing, 1.5 * spacing]
 
-
+####################### Create Stacked Plot #############################
 # Create the bar plot with updated date formatting
 fig2, ax = plt.subplots(figsize=(14, 6))
 bars_total = ax.bar(
@@ -307,7 +313,6 @@ ax.legend(fontsize = 16)
 plt.xticks(rotation=45)
 ax.yaxis.grid(True, linestyle='-', linewidth=0.5, alpha=0.5, zorder = 0)
 ax.set_axisbelow(True)  # Ensures grid lines are behind bars
-
 ax.set_ylim(0, 22.5)  # Adjust y-axis limits for visibility
 
 # Add vertical brackets to label differences, centered over the blue bars
@@ -327,12 +332,10 @@ for i, (bar_without_snow, bar_with_snow) in enumerate(zip(bars_total, bars_total
     ax.plot([x_center - 0.05, x_center + 0.05], [bracket_bottom, bracket_bottom], color='black', lw=1.5)
 
     # Annotate the difference
-    
     ax.text(x_center, bracket_top+.1, f'Max Loss\nHour:\n{formatted_date} {formatted_time}\nTotal Loss:\n{total_loss:.1f} GW\n({total_percent_loss:.1f}%)', ha='center', va='bottom', fontsize=13, color='black')
 
-
+####################### Print and Save Plot #############################
 # Show the plot
 plt.tight_layout()
-
 fig2.savefig(BASE_DIR / 'Figures/Max Loss Hour Figure 2.pdf', format='pdf', bbox_inches='tight')
 plt.show()
