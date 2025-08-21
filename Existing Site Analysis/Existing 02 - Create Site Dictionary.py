@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+
 """
+This script creates a PV site dictionary for other scripts to easily access site metadata.
 Updated on 8/19/25 to use portable file paths for GitHub sharing
 @author: shelbielwickett
 """
-# Import all necessary packages
+####################### Library Imports #############################
 import pandas as pd
 import json
 from pathlib import Path
 
-
+####################### User Defined Constants #############################
 # === EDIT YEAR ===
-year = 2022
+year = 2020
 
 # === EDIT TRACKING TYPE ===
 tracking_type = ['All']
@@ -25,12 +26,29 @@ state = ['All']
 # === EDIT TITLE ===
 title = 'Eastern Interconnect'
 
-# === EDIT THIS TO POINT TO YOUR EXTERNAL DRIVE ===
+# === CHOOSE BASE DIRECTORY ===
 BASE_DIR = Path("/Volumes/Wickett SSD/Snow_Loss_Project")
 
+####################### OTHER Constants #############################
 analysis_title = f'{year} {title}'
 
-# This function creates a site dictionary that includes the closest corresponding NSIDC datapoint latitudes and longitudes
+# Load the site data
+site_data = pd.read_csv('Data/Site Data/2024_utility-scale_solar_data_update.csv')
+unfiltered_site_df = pd.DataFrame(site_data)
+unfiltered_site_df = unfiltered_site_df.drop(unfiltered_site_df.columns[-19:], axis=1)
+
+# Output site metadata files
+csv_output_path = BASE_DIR / f'Existing Site Metadata Files/{year}_PV_existing_site_metadata.csv'
+folder = csv_output_path.parent
+folder.mkdir(parents=True, exist_ok=True)
+
+json_file_path = BASE_DIR / f'Project json files/{analysis_title} Analysis.json'
+folder = json_file_path.parent
+folder.mkdir(parents=True, exist_ok=True)
+
+####################### Define All Functions #############################
+
+# Create a site dictionary that includes the closest corresponding NSIDC datapoint latitudes and longitudes
 def create_site_dictionary(year, site_df):
     # Changes dataframe of sites into a dictionary
     site_dict = site_df.to_dict(orient='index')
@@ -38,14 +56,10 @@ def create_site_dictionary(year, site_df):
 
 # This function allows the user to filter the type of sites they want to analyze
 def filter_site_df(tracking_type, year, electric_region, state, site_df):
-    
-    
     filtered_site_df = site_df[site_df['Solar COD Year'] <= year[0]]
     #uncomment next line to not filter installation year
     #filtered_site_df = site_df
 
-
-    
     if 'All' in tracking_type:
         filtered_site_df = filtered_site_df
     else:
@@ -55,9 +69,9 @@ def filter_site_df(tracking_type, year, electric_region, state, site_df):
         filtered_site_df = filtered_site_df
     else:
         #filtered_site_df = filtered_site_df[filtered_site_df['Region'].isin(electric_region)]
-        regions_to_keep = ['PJM', 'MISO', 'ISO-NE', 'NYISO', 'SPP', 'Southeast (non-ISO)']
+        #regions_to_keep = ['PJM', 'MISO', 'ISO-NE', 'NYISO', 'SPP', 'Southeast (non-ISO)']
         filtered_site_df = filtered_site_df[
-            filtered_site_df['Region'].str.lower().isin([region.lower() for region in regions_to_keep])
+            filtered_site_df['Region'].str.lower().isin([region.lower() for region in electric_region])
         ]
     if 'All' in state:
         filtered_site_df = filtered_site_df
@@ -66,45 +80,26 @@ def filter_site_df(tracking_type, year, electric_region, state, site_df):
         
     return filtered_site_df
 
+def main() -> int:
+    # Filter site data
+    year_series = [year]
+    site_df = filter_site_df(tracking_type, year_series, electric_region, state, unfiltered_site_df)
+    site_df = site_df.reset_index(drop=True)
+    print(site_df)
 
-# Load the site data
-site_data = pd.read_csv('Data/Site Data/2024_utility-scale_solar_data_update.csv')
-unfiltered_site_df = pd.DataFrame(site_data)
-unfiltered_site_df = unfiltered_site_df.drop(unfiltered_site_df.columns[-19:], axis=1)
-print(unfiltered_site_df['Solar COD Year'].dtype)
+    # Create the site dictionary
+    site_dict = create_site_dictionary(year, site_df)
 
-# Specifically filter out FL
-# Get a list of all states in site_df, excluding Florida
-
-# Filter site data
-year_series = [year]
-
-site_df = filter_site_df(tracking_type, year_series, electric_region, state, unfiltered_site_df)
-site_df = site_df.reset_index(drop=True)
-
-print(site_df)
-
-# Display first 50 rows of the filtered DataFrame
-print(site_df.iloc[:, 1:3])
-
-# Create the site dictionary
-site_dict = create_site_dictionary(year, site_df)
-#print(site_dict)
-
-# Output site metadata files
-
-csv_output_path = BASE_DIR / f'Existing Site Metadata Files/{year}_PV_existing_site_metadata.csv'
-folder = csv_output_path.parent
-folder.mkdir(parents=True, exist_ok=True)
-site_df.to_csv(csv_output_path, index=False)
-print(f"Site info CSV saved to {csv_output_path}")
+    site_df.to_csv(csv_output_path, index=False)
+    print(f"Site info CSV saved to {csv_output_path}")
 
 
-# Save the dictionary to a JSON file
-json_file_path = BASE_DIR / f'Project json files/{analysis_title} Analysis.json'
-folder = json_file_path.parent
-folder.mkdir(parents=True, exist_ok=True)
-with open(json_file_path, 'w') as json_file:
-    json.dump(site_dict, json_file, indent=4)
+    # Save the dictionary to a JSON file
+    with open(json_file_path, 'w') as json_file:
+        json.dump(site_dict, json_file, indent=4)
+    print(f"Site dictionary saved to {json_file_path}")
+    
+    return 0
 
-print(f"Site dictionary saved to {json_file_path}")
+if __name__ == "__main__":
+    raise SystemExit(main())
