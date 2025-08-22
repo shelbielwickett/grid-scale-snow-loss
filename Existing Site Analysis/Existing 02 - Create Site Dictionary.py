@@ -33,7 +33,7 @@ BASE_DIR = Path("/Volumes/Wickett SSD/Snow_Loss_Project")
 analysis_title = f'{year} {title}'
 
 # Load the site data
-site_data = pd.read_csv('Data/Site Data/2024_utility-scale_solar_data_update.csv')
+site_data = pd.read_csv('Data/Site Data/existing_site_data.csv')
 unfiltered_site_df = pd.DataFrame(site_data)
 unfiltered_site_df = unfiltered_site_df.drop(unfiltered_site_df.columns[-19:], axis=1)
 
