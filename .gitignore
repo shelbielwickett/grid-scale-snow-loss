@@ -62,3 +62,5 @@ __pycache__/
 !/Data/Snow Data/.gitkeep
 /Data/Site Data/*
 !/Data/Site Data/.gitkeep
+/Data/Geo Data/*
+!/Data/Geo Data/.gitkeep
