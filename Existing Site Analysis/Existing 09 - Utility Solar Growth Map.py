@@ -27,7 +27,7 @@ BASE_DIR = Path("/Volumes/Wickett SSD/Snow_Loss_Project")
 GEO_DIR = Path("Data/Geo Data/jurisdiction_nerc_subregion_v1")
 geo_file_path = GEO_DIR / "jurisdiction_nerc_subregion_v1.gpkg"
 SITE_DIR = Path("Data/Site Data")
-existing_site_file_path = SITE_DIR / '2024_utility-scale_solar_data_update.csv'
+existing_site_file_path = SITE_DIR / 'existing_site_data.csv'
 
 
 ####################### Define All Functions #############################
