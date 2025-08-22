@@ -36,7 +36,7 @@ api = 'MMnlHTRA1FIWpFCH5JJAlLUFK16QmhzGiPQICAem'
 ####################### OTHER Constants #############################
 
 # Define all file/folder paths relative to BASE_DIR
-SITE_DATA_FILE = Path("Data/Site Data/2024_utility-scale_solar_data_update.csv")
+SITE_DATA_FILE = Path("Data/Site Data/existing_site_data.csv")
 NSRDB_DIR = BASE_DIR / f"NSRDB_parquet/{YEAR}_NSRDB_parquet"
 LOG_FILE = BASE_DIR / "Logs/missing_existing_site_NSRDB_data_log.txt"
 
