@@ -46,3 +46,5 @@ pyogrio>=0.7
 shapely
 pyproj
 rtree
+rioxarray==0.15.1
+rasterio==1.4.1matplotlib==3.10.3
